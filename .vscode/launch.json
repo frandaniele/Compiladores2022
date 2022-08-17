@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug ANTLR4 grammar",
+            "type": "antlr-debug",
+            "request": "launch",
+            "grammar": "${file}",
+            "input": "input/entrada.txt",
+            "startRule": "s",
+            "printParseTree": true,
+            "visualParseTree": true
+        },
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch App",
+            "request": "launch",
+            "mainClass": "primerproyecto.App",
+            "projectName": "primerproyecto"
+        }
+    ]
+}
