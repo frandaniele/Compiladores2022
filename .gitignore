@@ -2,3 +2,4 @@ target
 compiladores*.java
 *.tokens
 .antlr
+c
