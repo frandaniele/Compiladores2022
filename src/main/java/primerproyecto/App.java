@@ -14,7 +14,7 @@ public class App
 
         CharStream input = null;
         try {
-            input = CharStreams.fromFileName("input/entrada.txt");
+            input = CharStreams.fromFileName("input/declaraciones.txt");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -36,7 +36,9 @@ public class App
 
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial
-        parser.s();
+        //parser.s();
+
+        parser.programa();
         // ParseTree tree =  parser.s();
         // Conectamos el visitor
         // Caminante visitor = new Caminante();
