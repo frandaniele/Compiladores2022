@@ -5,9 +5,9 @@
             "name": "Debug ANTLR4 grammar",
             "type": "antlr-debug",
             "request": "launch",
-            "grammar": "/home/francisco/Facultad/2022Compiladores/practico/tutorial/primerproyecto/src/main/java/primerproyecto/compiladores.g4",
-            "input": "input/aritmetica.txt",
-            "startRule": "test",
+            "grammar": "/home/francisco/Facultad/2022Compiladores/practico/tutorial/primerproyecto/src/main/java/primerproyecto/declaraciones.g4",
+            "input": "input/declaraciones.txt",
+            "startRule": "programa",
             "printParseTree": true,
             "visualParseTree": true
         },

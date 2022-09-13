@@ -20,13 +20,15 @@ public class App
         }
 
         // create a lexer that feeds off of input CharStream
-        compiladoresLexer lexer = new compiladoresLexer(input);
+        //compiladoresLexer lexer = new compiladoresLexer(input);
+        declaracionesLexer lexer = new declaracionesLexer(input);
         
         // create a buffer of tokens pulled from the lexer
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         
         // create a parser that feeds off the tokens buffer
-        compiladoresParser parser = new compiladoresParser(tokens);
+        //compiladoresParser parser = new compiladoresParser(tokens);
+        declaracionesParser parser = new declaracionesParser(tokens);
                 
         // create Listener
         // ExpRegBaseListener escucha = new Escucha();

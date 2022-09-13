@@ -76,7 +76,7 @@ instrucciones  : instruccion instrucciones
 		
 instruccion : declaracion
             | bloque
-         // | while
+         // | iwhile
 		    ;
 
 bloque : LLA instrucciones LLC ; //es una instruccion compuesta
@@ -88,6 +88,9 @@ declaracion	: INT secvar PYC { System.out.println("ok"); }
 secvar   : ID COMA secvar
          | ID
          ;
+
+iwhile :  ;
+
 
 //divido entre las sumas y multiplicaciones
 //term: terminos | factor de la mult | oal: op aritm logica

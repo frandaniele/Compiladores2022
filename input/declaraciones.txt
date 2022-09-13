@@ -1,3 +1,13 @@
-int x;
-int juancito2;
-int nros_prims, abecedario;
+
+char a, b, c;
+char a = 3, b = 'x', c;
+int x = 5, y, z = w;
+
+while(1){    double x = y;}
+while(3)
+int x = 5;
+int x = 5;
+while(3*4 == x){
+    int x = 2 * 3 + x;
+    int juancito2;
+    int nros_prims, abecedario;}
