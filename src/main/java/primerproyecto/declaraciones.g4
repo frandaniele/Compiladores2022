@@ -25,9 +25,15 @@ PA : '(';
 PC : ')';
 LLA : '{';
 LLC : '}';
-CMP : (EQ EQ | MAY | MEN | MAY EQ | MEN EQ) ;
+CMP : (MAY | MEN | MAY EQ | MEN EQ) ;
+EQUA : (EQ EQ | NOT EQ) ;
 MAY: '>';
 MEN: '<';
+LAND: AND AND;
+LOR: OR OR;
+AND: '&';//como sumas
+OR: '|';//como multiplicaciones
+NOT: '!';
 OP : (SUMA SUMA | RESTA RESTA) ;
 ID : [A-Za-z_] [A-Za-z0-9_]* ;
 SYMBOL : '\'' [ -~] '\'';
@@ -70,7 +76,7 @@ asignacion : ID EQ oal
 
 declaracion : INT secvar PYC 
             | DOUBLE secvar PYC 
-            | CHAR secchar PYC 
+            | CHAR secvar PYC 
             | OTRO
 	       ;
 
@@ -80,15 +86,61 @@ secvar : ID COMA secvar
        | asignacion
        ;
 
-secchar : ID COMA secchar
-        | ID
-        | ID EQ (ID | ENTERO | SYMBOL) COMA secchar
-        | ID EQ (ID | ENTERO | SYMBOL)
-        ;
-
-oal : term t
+oal : lor lo
     |
     ;
+
+lor : land lo
+    |
+    ;
+
+lo : LOR lor lo
+   |
+   ; 
+
+land : or la
+     |
+     ;
+
+la  : LAND land la
+    |
+    ;
+
+or : and o
+   |
+   ;
+
+o : OR or o
+  |
+  ;
+
+and : equality an
+    |
+    ;
+
+an : AND and an
+   |
+   ;
+
+equality : relation e
+         |
+         ;
+
+e : EQUA equality e
+  |
+  ;
+
+relation : arit_exp r
+         |
+         ; 
+
+r  : CMP arit_exp r //debo atenderlo despues de todas las operaciones, y desp de estas las && y || 
+   |
+   ;
+
+arit_exp : term t
+         |
+         ;
 
 term : factor f
      |
@@ -96,7 +148,6 @@ term : factor f
 
 t : SUMA term t 
   | RESTA term t
-  | CMP term t
   |
   ;
 
@@ -106,6 +157,7 @@ op : OP ID //i++, ++i, --i, i--
 
 factor : ENTERO
        | ID //puede haber una variable
+       | SYMBOL //creo que se puede hacer aritmetica con simbolos
        | op 
        | PA oal PC //arme un termino con parentesis (vuelvo a empezar)
        ;

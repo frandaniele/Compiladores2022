@@ -4,3 +4,4 @@ declaraciones*.java
 *.tokens
 .antlr
 c
+aux.txt
