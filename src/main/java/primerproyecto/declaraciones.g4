@@ -34,11 +34,19 @@ LOR: OR OR;
 AND: '&';//como sumas
 OR: '|';//como multiplicaciones
 NOT: '!';
+BARRAS: '//';
+CA: '/*';
+CC: '*/';
 OP : (SUMA SUMA | RESTA RESTA) ;
 ID : [A-Za-z_] [A-Za-z0-9_]* ;
 SYMBOL : '\'' [ -~] '\'';
 
-OTRO : . ;
+fragment ANY : .*? ;
+fragment NONL : ~[\n\r]*;
+
+BLOCKCOMMENT : CA ANY CC -> skip; 
+
+LINECOMMENT : BARRAS NONL -> skip;
 
 programa : { System.out.println("inicio"); } instrucciones { System.out.println("fin"); } EOF ;
 
@@ -54,7 +62,7 @@ instruccion : declaracion { System.out.println("declaracion ok"); }
             | ifor { System.out.println("for ok"); }
             | asignacion PYC { System.out.println("asignacion ok"); }
             | op PYC { System.out.println("op ok"); }
-	       ;
+	         ;
 
 bloque : LLA instrucciones LLC ;
 
@@ -77,8 +85,7 @@ asignacion : ID EQ oal
 declaracion : INT secvar PYC 
             | DOUBLE secvar PYC 
             | CHAR secvar PYC 
-            | OTRO
-	       ;
+	         ;
 
 secvar : ID COMA secvar
        | ID
