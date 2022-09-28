@@ -11,9 +11,12 @@ RETURN : 'return';
 FOR : 'for';
 WHILE: 'while';
 IF: 'if';
+ELSE: 'else';
+TIPO: (INT | DOUBLE | CHAR | VOID) ;
 INT: 'int';
 DOUBLE: 'double';
 CHAR: 'char';
+VOID: 'void';
 PYC: ';';
 COMA: ',';
 EQ: '=';
@@ -62,29 +65,46 @@ instruccion : declaracion { System.out.println("declaracion ok"); }
             | ifor { System.out.println("for ok"); }
             | asignacion PYC { System.out.println("asignacion ok"); }
             | op PYC { System.out.println("op ok"); }
+            | funcion { System.out.println("funcion ok"); }
 	         ;
+
+funcion : TIPO ID PA params PC bloque
+        | TIPO ID PA params PC PYC
+        ;
+
+params : TIPO ID sec_params
+       |
+       ;
+
+sec_params : COMA TIPO ID sec_params
+           | 
+           ;
 
 bloque : LLA instrucciones LLC ;
 
 iwhile :  WHILE PA oal PC instruccion
        ;
 
-i_if : IF PA oal PC instruccion 
+i_if : IF PA oal PC instruccion sec_elif
      ;
+
+sec_elif : ELSE IF PA oal PC instruccion sec_elif
+         | ELSE instruccion
+         |
+         ;
 
 ifor : FOR PA (asignacion | declaracion) oal PYC oal PC instruccion
      | FOR PA (asignacion | declaracion) oal PYC oal PC PYC     
      ;
 
 ireturn : RETURN oal PYC
+        | RETURN PYC
         ;
 
 asignacion : ID EQ oal
            ;
 
-declaracion : INT secvar PYC 
-            | DOUBLE secvar PYC 
-            | CHAR secvar PYC 
+declaracion : TIPO secvar PYC 
 	         ;
 
 secvar : ID COMA secvar

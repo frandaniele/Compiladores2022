@@ -29,11 +29,11 @@ public class Escucha extends declaracionesBaseListener {
         ts.delContext();
     }
 
-    
+
 
     @Override
     public void visitTerminal(TerminalNode node) {
-        System.out.println(" -- TOKEN --> |" + node.getText() + "|");
+        //System.out.println(" -- TOKEN --> |" + node.getText() + "|");
     }
 }
 /*
