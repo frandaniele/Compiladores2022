@@ -6,21 +6,7 @@ import primerproyecto.declaracionesParser.BloqueContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
 
 public class Escucha extends declaracionesBaseListener {
-    private Integer contexto = 0;
-
-    @Override
-    public void enterBloque(BloqueContext ctx) {
-        contexto++;
-        System.out.println("Nuevo contexto " + contexto);
-    }
-
-    @Override
-    public void exitBloque(BloqueContext ctx) {
-        System.out.println("Fin contexto " + contexto);
-        contexto--;
-
-    }
-
+    
     @Override
     public void enterPrograma(ProgramaContext ctx) {
         System.out.println("Comienza compilacion");
@@ -30,6 +16,20 @@ public class Escucha extends declaracionesBaseListener {
     public void exitPrograma(ProgramaContext ctx) {
         System.out.println("fin compilacion");
     }
+
+    @Override
+    public void enterBloque(BloqueContext ctx) {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ts.addContext();
+    }
+
+    @Override
+    public void exitBloque(BloqueContext ctx) {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ts.delContext();
+    }
+
+    
 
     @Override
     public void visitTerminal(TerminalNode node) {
