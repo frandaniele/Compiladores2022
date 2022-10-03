@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import primerproyecto.declaracionesParser.AsignacionContext;
 import primerproyecto.declaracionesParser.BloqueContext;
 import primerproyecto.declaracionesParser.DeclaracionContext;
+import primerproyecto.declaracionesParser.FactorContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
 import primerproyecto.declaracionesParser.SecvarContext;
 
@@ -14,13 +15,14 @@ public class Escucha extends declaracionesBaseListener {
     @Override
     public void enterPrograma(ProgramaContext ctx) {
         System.out.println("Comienza compilacion");
+        new TablaSimbolos();
     }
 
     @Override
     public void exitPrograma(ProgramaContext ctx) {
         System.out.println("fin compilacion");
     }
-
+    
     @Override
     public void enterBloque(BloqueContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
@@ -30,6 +32,7 @@ public class Escucha extends declaracionesBaseListener {
     @Override
     public void exitBloque(BloqueContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
+
         ts.delContext();
     }
 
@@ -47,19 +50,59 @@ public class Escucha extends declaracionesBaseListener {
     public void exitAsignacion(AsignacionContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         ParserRuleContext prc = ctx;
+        Variable id;
 
         while(!((prc = prc.getParent()) instanceof DeclaracionContext)) {
-            System.out.println(" -- asignacion out --> |" + (prc instanceof DeclaracionContext) + "|");
-            if(prc == null){
-                ts.buscarSimboloLocal(null);
-                
-                System.out.println("null");
-                return;
+            if(prc == null) {
+                if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
+                    if((id = (Variable)ts.buscarSimbolo(ctx.ID().getText())) == null) {
+                        System.out.println("variable " + ctx.ID().getText() + " not declared");
+                        return;
+                    }
+                }
+                else {
+                    id.setInit(true);
+                    return;
+                }
             }
         }
-            
-        Variable id = new Variable(ctx.ID().getText(), TipoDato.INT, false, true);
-        ts.addSimbolo(id);
+
+        if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
+            ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, true));
+            return;
+        }
+        else {
+            System.out.println("variable " + ctx.ID().getText() + " redefined");
+            return;
+        }            
+    }
+
+    @Override
+    public void enterFactor(FactorContext ctx) {
+    }
+
+    @Override
+    public void exitFactor(FactorContext ctx) {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        Variable id;
+
+        if(ctx.ID() != null) {
+            if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) != null) {
+                if(id.getInit()) {
+                    id.setUsado(true);
+                    return;
+                }
+            }
+            else if((id = (Variable)ts.buscarSimbolo(ctx.ID().getText())) != null) {
+                if(id.getInit()) {
+                    id.setUsado(true);
+                    return;
+                }
+            }
+                
+            System.out.println("variable " + ctx.ID().getText() + " not defined");
+            return;
+        }
     }
 
     @Override
@@ -69,18 +112,28 @@ public class Escucha extends declaracionesBaseListener {
 
     @Override
     public void exitSecvar(SecvarContext ctx) {
-        System.out.println(" -- secvar out --> |" + ctx.ID() + "|");
-        //algo parecido a la asignacion, pero solo addsimbolo
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        
+        if(ctx.ID() != null) {
+            if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
+                ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, false));
+                return;
+            }
+            else {
+                System.out.println("variable " + ctx.ID().getText() + " redeclared");
+                return;
+            }
+        }
     }
 
     @Override
     public void enterDeclaracion(DeclaracionContext ctx) {
-        System.out.println(" -- declaracion in --> |" + ctx.secvar() + "|");
+        //System.out.println(" -- declaracion in --> |" + ctx.secvar() + "|");
     }
     
     @Override
     public void exitDeclaracion(DeclaracionContext ctx) {
-        System.out.println(" -- declaracion out --> |" + ctx.secvar().getText() + "|");
+       // System.out.println(" -- declaracion out --> |" + ctx.secvar().getText() + "|");
     }
 }
 /*

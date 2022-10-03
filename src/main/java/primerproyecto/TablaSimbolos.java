@@ -32,6 +32,18 @@ public final class TablaSimbolos {
     }
 
     public void delContext() {
+        printTabla();     
+
+        for(Id id : lista.getLast().values()){ 
+            if(id.getUsado() == false) {
+                System.out.println("variable " + id.getNombre() + " not used");
+            }
+
+            if(id.getInit() == false) {
+                System.out.println("variable " + id.getNombre() + " never defined");
+            }
+        }
+
         lista.removeLast();
     }
     
@@ -39,16 +51,27 @@ public final class TablaSimbolos {
         lista.getLast().put(id.getNombre(), id); //putIfAbsent?
     }
 
-    public Boolean buscarSimbolo(Id id) {//probablemente sea mas eficiente buscar desde el ultimo contexto
+    public Id buscarSimbolo(String id) {//probablemente sea mas eficiente buscar desde el ultimo contexto
         for(Map<String, Id> context : lista) {
-            if(context.containsKey(id.getNombre()))
-                return true;
+            if(context.containsKey(id))
+                return context.get(id);
         }
 
-        return false;
+        return null;
     }
 
-    public Boolean buscarSimboloLocal(Id id) {
-        return lista.getLast().containsKey(id.getNombre());
+    public Id buscarSimboloLocal(String id) {
+        if(lista.getLast().containsKey(id))
+            return lista.getLast().get(id);
+        
+        return null;
+    }
+
+    private void printTabla() {
+        int c = 0;
+        for(Map<String, Id> context : lista) {
+            System.out.println("tabla de simbolos " + c + ": " + context.keySet());
+            c++;
+        }
     }
 }
