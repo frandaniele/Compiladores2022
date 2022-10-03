@@ -17,13 +17,13 @@ public abstract class Id {
     public void setUsado(Boolean usado) {
         this.usado = usado;
     }
+    
+    public Boolean getUsado() {
+        return usado;
+    }
 
     public void setInit(Boolean init) {
         this.init = init;
-    }
-
-    public Boolean getUsado() {
-        return usado;
     }
     
     public Boolean getInit() {

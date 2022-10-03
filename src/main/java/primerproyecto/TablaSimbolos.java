@@ -39,7 +39,7 @@ public final class TablaSimbolos {
         lista.getLast().put(id.getNombre(), id); //putIfAbsent?
     }
 
-    public Boolean buscarSimbolo(Id id) {
+    public Boolean buscarSimbolo(Id id) {//probablemente sea mas eficiente buscar desde el ultimo contexto
         for(Map<String, Id> context : lista) {
             if(context.containsKey(id.getNombre()))
                 return true;

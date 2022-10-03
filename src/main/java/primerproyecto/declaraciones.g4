@@ -23,6 +23,7 @@ EQ: '=';
 SUMA : '+';
 RESTA : '-';
 MULT : '*';
+MOD : '%';
 DIV : '/';
 PA : '(';
 PC : ')';
@@ -191,5 +192,6 @@ factor : ENTERO
     
 f : MULT factor f 
   | DIV  factor f
+  | MOD  factor f
   | 
   ;

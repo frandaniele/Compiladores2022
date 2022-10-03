@@ -1,23 +1,23 @@
 package primerproyecto;
 
-import java.util.List;
+import java.util.LinkedList;
 
 public class Funcion extends Id {
-    private List<TipoDato> args;
+    private LinkedList<TipoDato> args;
 
-    public Funcion(String nombre, TipoDato tipo, Boolean usado, Boolean init, List<TipoDato> args) {
+    public Funcion(String nombre, TipoDato tipo, Boolean usado, Boolean init) {
         super.nombre = nombre;
         super.tipo = tipo;
         super.usado = usado;
         super.init = init;
-        this.args = args;
+        this.args = new LinkedList<TipoDato>();
     }
 
-    public List<TipoDato> getArgs() {
+    public LinkedList<TipoDato> getArgs() {
         return args;
     }
 
-    public void setArgs(List<TipoDato> args) {
+    public void setArgs(LinkedList<TipoDato> args) {
         this.args = args;
     }    
     
