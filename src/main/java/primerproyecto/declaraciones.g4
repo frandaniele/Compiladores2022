@@ -99,8 +99,8 @@ sec_elif : ELSE IF PA oal PC instruccion sec_elif
          |
          ;
 
-ifor : FOR PA (asignacion | declaracion) oal PYC oal PC instruccion
-     | FOR PA (asignacion | declaracion) oal PYC oal PC PYC     
+ifor : FOR PA (asignacion PYC | declaracion) oal PYC oal PC instruccion
+     | FOR PA (asignacion PYC | declaracion) oal PYC oal PC PYC     
      ;
 
 ireturn : RETURN oal PYC

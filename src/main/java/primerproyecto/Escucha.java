@@ -60,19 +60,21 @@ public class Escucha extends declaracionesBaseListener {
         ParserRuleContext prc = ctx;
         Variable id;
 
-        while(!((prc = prc.getParent()) instanceof DeclaracionContext)) {
-            if(prc == null) {//es una asignacion sola
-                if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
-                    if((id = (Variable)ts.buscarSimbolo(ctx.ID().getText())) == null) {
-                        System.out.println("listener: variable " + ctx.ID().getText() + " not declared");
-                        return;
-                    }
-                }
-                else {//creo que esta mal porque no asigna a las que no estan en contexto local
-                    id.setInit(true);
-                    return;
-                }
+        while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && prc != null);//si es declaracion o si es null salgo
+
+        if(prc == null) {//es una asignacion sola
+            if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) != null) {
+                id.setInit(true);
+                return;
             }
+
+            if((id = (Variable)ts.buscarSimbolo(ctx.ID().getText())) != null) {
+                id.setInit(true);
+                return;
+            }
+
+            System.out.println("listener: variable " + ctx.ID().getText() + " not declared");
+            return;
         }
 
         //asignacion con declaracion
@@ -139,7 +141,7 @@ public class Escucha extends declaracionesBaseListener {
         if(ctx.TIPO().getSymbol().getTokenIndex() - 1 == declaracionesParser.VOID) // revisar
             System.out.println("listener: void variable not allowed");
     }
-        
+
     @Override
     public void exitParams(ParamsContext ctx) {
     }
