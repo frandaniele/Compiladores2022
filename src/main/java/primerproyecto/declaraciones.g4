@@ -64,18 +64,18 @@ instruccion : declaracion { System.out.println("parser: declaracion ok"); }
             | i_if { System.out.println("parser: if ok"); }
             | ireturn { System.out.println("parser: return ok"); }
             | ifor { System.out.println("parser: for ok"); }
+            | funcion { System.out.println("parser: declaracion funcion ok"); }
             | asignacion PYC { System.out.println("parser: asignacion ok"); }
             | op PYC { System.out.println("parser: op ok"); }
-            | funcion { System.out.println("parser: declaracion funcion ok"); }
-            | fun_call { System.out.println("parser: llamado funcion ok"); }
+            | fun_call PYC { System.out.println("parser: llamado funcion ok"); }
 	         ;
 
 funcion : TIPO ID PA params PC bloque
         | TIPO ID PA params PC PYC
         ;
 
-fun_call : ID PA secvar PC PYC
-         | ID PA PC PYC
+fun_call : ID PA secvar PC 
+         | ID PA PC 
          ;
 
 params : TIPO ID sec_params
@@ -193,6 +193,7 @@ factor : ENTERO
        | SYMBOL //creo que se puede hacer aritmetica con simbolos
        | op 
        | PA oal PC //arme un termino con parentesis (vuelvo a empezar)
+       | fun_call
        ;
     
 f : MULT factor f 

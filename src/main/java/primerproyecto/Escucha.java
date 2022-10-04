@@ -19,56 +19,50 @@ public class Escucha extends declaracionesBaseListener {
     public void enterPrograma(ProgramaContext ctx) {
         System.out.println("Comienza compilacion\n*************COMPILACION*************\n");
         new TablaSimbolos();
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        ts.addContext(); //contexto global?
+        agregarContexto(); //contexto global?
     }
 
     @Override
     public void exitPrograma(ProgramaContext ctx) {
-        TablaSimbolos ts = TablaSimbolos.getInstance();
+        eliminarContexto();//global
         System.out.println("\n*************************************\nfin compilacion");
-        ts.delContext();//global
     }
     
     @Override
     public void enterBloque(BloqueContext ctx) {
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        ts.addContext();
+        agregarContexto();
     }
     
     @Override
     public void exitBloque(BloqueContext ctx) {
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        ts.delContext();
+        eliminarContexto();
     }
     
     @Override
     public void enterIfor(IforContext ctx) {
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        ts.addContext();
+        agregarContexto();
     }
     
     @Override
     public void exitIfor(IforContext ctx) {
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        ts.delContext();
+        eliminarContexto();
     }
     
     @Override
     public void exitAsignacion(AsignacionContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         ParserRuleContext prc = ctx;
-        Variable id;
+        Id id;
 
         while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && prc != null);//si es declaracion o si es null salgo
 
         if(prc == null) {//es una asignacion sola
-            if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) != null) {
+            if((id = ts.buscarSimboloLocal(ctx.ID().getText())) != null) {
                 id.setInit(true);
                 return;
             }
 
-            if((id = (Variable)ts.buscarSimbolo(ctx.ID().getText())) != null) {
+            if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) {
                 id.setInit(true);
                 return;
             }
@@ -78,7 +72,7 @@ public class Escucha extends declaracionesBaseListener {
         }
 
         //asignacion con declaracion
-        if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
+        if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
             ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, true));
             return;
         }
@@ -105,32 +99,40 @@ public class Escucha extends declaracionesBaseListener {
     @Override
     public void exitSecvar(SecvarContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
-        
-        if(ctx.ID() != null && ctx.getParent() instanceof DeclaracionContext) {//secvar en declaracion
-            if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
-                ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, false));
-                return;
-            }
-            else {
-                System.out.println("listener: variable " + ctx.ID().getText() + " redeclared");
-                return;
-            }
-        }
-        
-        //secvar en funcall
         ParserRuleContext prc = ctx;
+
+        //declaracion funcall o null salgo, xq solo me interesa si viene de alguna de esas
+        while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && !(prc instanceof Fun_callContext)  && (prc != null));
+
         if(ctx.ID() != null) {
-            while((prc = prc.getParent()) != null) {
-                if(prc instanceof Fun_callContext) {
-                    setVarUsed(ctx.ID().getText());
+            if(prc instanceof DeclaracionContext) {//secvar en declaracion
+                if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
+                    ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, false));
+                    return;
+                }
+                else {
+                    System.out.println("listener: variable " + ctx.ID().getText() + " redeclared");
+                    return;
                 }
             }
-        }
+            
+            if(prc instanceof Fun_callContext) {//secvar en funcall
+                setVarUsed(ctx.ID().getText());
+                return;
+            }
+        }       
     }
 
     @Override
     public void exitFactor(FactorContext ctx) {
-        if(ctx.ID() != null) {
+        if(ctx.ID() != null) {//si hay un id en una operacion aritmetica logica, se considera usada
+            setVarUsed(ctx.ID().getText());
+        }
+    }
+
+    @Override
+    public void exitFun_call(Fun_callContext ctx) {
+        if(ctx.ID() != null) {//llamo a una funcion, la marco como usada
             setVarUsed(ctx.ID().getText());
         }
     }
@@ -151,16 +153,16 @@ public class Escucha extends declaracionesBaseListener {
     }
 
     private void setVarUsed(String id_name) {
-        Variable id;
+        Id id;
         TablaSimbolos ts = TablaSimbolos.getInstance();
 
-        if((id = (Variable)ts.buscarSimboloLocal(id_name)) != null) {
+        if((id = ts.buscarSimboloLocal(id_name)) != null) {
             if(id.getInit()) {
                 id.setUsado(true);
                 return;
             }
         }
-        else if((id = (Variable)ts.buscarSimbolo(id_name)) != null) {
+        else if((id = ts.buscarSimbolo(id_name)) != null) {
             if(id.getInit()) {
                 id.setUsado(true);
                 return;
@@ -174,28 +176,14 @@ public class Escucha extends declaracionesBaseListener {
         System.out.println("listener: variable " + id_name + " not defined");
         return;
     }
+
+    private void agregarContexto() {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ts.addContext();
+    }
+    
+    private void eliminarContexto() {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ts.delContext();
+    }
 }
-/*
- * tabla de simbolos
- * List<Map<String,Id>>
- * cada mapa es segun un contexto, abro una llave creo un contexto, la cierro lo elimino
- * hacerla en singleton
- * addContext
- * delContext
- * addSimbolo(Id id)
- * buscarSimbolo(Id id)
- * buscarSimboloLocal(Id id) -> primero entro con esta, desp la de arriba y sino encuentra marca el error
- * 
- * clase Id 
- *  string nombre
- *  tipodato tipo (void, int, double, char) -> enum TipoDato
- *  boolean inicializado 
- *  boolean usado -> si nunca estuvo a la derecha de una asignacion o no se imprimio no fue usada
- *  setters y getters
- * 
- * funcion extends id -> el retorno seria el tipodato de Id
- *  List<TipoDato> args
- *  addArg(TipoDato td)
- * 
- * variable extends id (la replica)
- */
