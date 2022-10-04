@@ -73,7 +73,10 @@ public class Escucha extends declaracionesBaseListener {
 
         //asignacion con declaracion
         if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
-            ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, true));
+            DeclaracionContext p = (DeclaracionContext)prc;
+            TipoDato t = getTipo(p.TIPO().getText());
+
+            ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
             return;
         }
         else {
@@ -87,7 +90,9 @@ public class Escucha extends declaracionesBaseListener {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         
         if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
-            ts.addSimbolo(new Funcion(ctx.ID().getText(), TipoDato.INT, false, true));
+            TipoDato t = getTipo(ctx.TIPO().getText());
+            
+            ts.addSimbolo(new Funcion(ctx.ID().getText(), t, false, true));
             return;
         }
         else {
@@ -107,7 +112,10 @@ public class Escucha extends declaracionesBaseListener {
         if(ctx.ID() != null) {
             if(prc instanceof DeclaracionContext) {//secvar en declaracion
                 if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
-                    ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, false));
+                    DeclaracionContext p = (DeclaracionContext)prc;
+                    TipoDato t = getTipo(p.TIPO().getText());
+
+                    ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, false));
                     return;
                 }
                 else {
@@ -139,8 +147,7 @@ public class Escucha extends declaracionesBaseListener {
 
     @Override
     public void exitDeclaracion(DeclaracionContext ctx) {
-        //System.out.println("symbol: " + ctx.TIPO().getSymbol().getText() + " " + ctx.TIPO().getText() + ": " + ctx.TIPO().getSymbol().getTokenIndex());
-        if(ctx.TIPO().getSymbol().getTokenIndex() - 1 == declaracionesParser.VOID) // revisar
+        if(ctx.TIPO().getText().equals("void"))
             System.out.println("listener: void variable not allowed");
     }
 
@@ -175,6 +182,19 @@ public class Escucha extends declaracionesBaseListener {
         
         System.out.println("listener: variable " + id_name + " not defined");
         return;
+    }
+    
+    private TipoDato getTipo(String t) {
+        if (t.equals("void"))
+            return TipoDato.VOID;
+        else if (t.equals("int"))
+                return TipoDato.INT;
+        else if (t.equals("char"))    
+                return TipoDato.CHAR;
+        else if (t.equals("double"))    
+                return TipoDato.DOUBLE;
+
+        return null;
     }
 
     private void agregarContexto() {
