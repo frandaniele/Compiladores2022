@@ -36,11 +36,11 @@ public final class TablaSimbolos {
 
         for(Id id : lista.getLast().values()){ 
             if(id.getUsado() == false) {
-                System.out.println("variable " + id.getNombre() + " not used");
+                System.out.println("tabla: variable " + id.getNombre() + " not used");
             }
 
             if(id.getInit() == false) {
-                System.out.println("variable " + id.getNombre() + " never defined");
+                System.out.println("tabla: variable " + id.getNombre() + " never defined");
             }
         }
 
@@ -69,9 +69,11 @@ public final class TablaSimbolos {
 
     private void printTabla() {
         int c = 0;
+        System.out.println("\n-------------TABLA-------------------\nContextos antes de eliminar el ultimo");
         for(Map<String, Id> context : lista) {
             System.out.println("tabla de simbolos " + c + ": " + context.keySet());
             c++;
         }
+        System.out.println("-------------------------------------\n");
     }
 }

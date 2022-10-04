@@ -52,26 +52,31 @@ BLOCKCOMMENT : CA ANY CC -> skip;
 
 LINECOMMENT : BARRAS NONL -> skip;
 
-programa : { System.out.println("inicio"); } instrucciones { System.out.println("fin"); } EOF ;
+programa : { System.out.println("inicio parser\n+++++++++++++++PARSER++++++++++++++++\n"); } instrucciones { System.out.println("\n+++++++++++++++++++++++++++++++++++++\nfin parser"); } EOF ;
 
 instrucciones : instruccion instrucciones
               |
               ;
 		
-instruccion : declaracion { System.out.println("declaracion ok"); }
-            | bloque { System.out.println("bloque ok"); }
-            | iwhile { System.out.println("while ok"); }
-            | i_if { System.out.println("if ok"); }
-            | ireturn { System.out.println("return ok"); }
-            | ifor { System.out.println("for ok"); }
-            | asignacion PYC { System.out.println("asignacion ok"); }
-            | op PYC { System.out.println("op ok"); }
-            | funcion { System.out.println("funcion ok"); }
+instruccion : declaracion { System.out.println("parser: declaracion ok"); }
+            | bloque { System.out.println("parser: bloque ok"); }
+            | iwhile { System.out.println("parser: while ok"); }
+            | i_if { System.out.println("parser: if ok"); }
+            | ireturn { System.out.println("parser: return ok"); }
+            | ifor { System.out.println("parser: for ok"); }
+            | asignacion PYC { System.out.println("parser: asignacion ok"); }
+            | op PYC { System.out.println("parser: op ok"); }
+            | funcion { System.out.println("parser: declaracion funcion ok"); }
+            | fun_call { System.out.println("parser: llamado funcion ok"); }
 	         ;
 
 funcion : TIPO ID PA params PC bloque
         | TIPO ID PA params PC PYC
         ;
+
+fun_call : ID PA secvar PC PYC
+         | ID PA PC PYC
+         ;
 
 params : TIPO ID sec_params
        |

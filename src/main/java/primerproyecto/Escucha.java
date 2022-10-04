@@ -1,26 +1,33 @@
 package primerproyecto;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import primerproyecto.declaracionesParser.AsignacionContext;
 import primerproyecto.declaracionesParser.BloqueContext;
 import primerproyecto.declaracionesParser.DeclaracionContext;
 import primerproyecto.declaracionesParser.FactorContext;
+import primerproyecto.declaracionesParser.Fun_callContext;
+import primerproyecto.declaracionesParser.FuncionContext;
+import primerproyecto.declaracionesParser.IforContext;
+import primerproyecto.declaracionesParser.ParamsContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
+import primerproyecto.declaracionesParser.Sec_paramsContext;
 import primerproyecto.declaracionesParser.SecvarContext;
 
 public class Escucha extends declaracionesBaseListener {
-    
     @Override
     public void enterPrograma(ProgramaContext ctx) {
-        System.out.println("Comienza compilacion");
+        System.out.println("Comienza compilacion\n*************COMPILACION*************\n");
         new TablaSimbolos();
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ts.addContext(); //contexto global?
     }
 
     @Override
     public void exitPrograma(ProgramaContext ctx) {
-        System.out.println("fin compilacion");
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        System.out.println("\n*************************************\nfin compilacion");
+        ts.delContext();//global
     }
     
     @Override
@@ -28,22 +35,23 @@ public class Escucha extends declaracionesBaseListener {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         ts.addContext();
     }
-
+    
     @Override
     public void exitBloque(BloqueContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
-
         ts.delContext();
     }
-
+    
     @Override
-    public void visitTerminal(TerminalNode node) {
-        //System.out.println(" -- TOKEN --> |" + node.getText() + "|");
+    public void enterIfor(IforContext ctx) {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ts.addContext();
     }
-
+    
     @Override
-    public void enterAsignacion(AsignacionContext ctx) {
-        //System.out.println(" -- asignacion out --> |" + ctx.ID() + "|" + " Parent: " + ctx.getParent() + "|");
+    public void exitIfor(IforContext ctx) {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ts.delContext();
     }
     
     @Override
@@ -53,87 +61,116 @@ public class Escucha extends declaracionesBaseListener {
         Variable id;
 
         while(!((prc = prc.getParent()) instanceof DeclaracionContext)) {
-            if(prc == null) {
+            if(prc == null) {//es una asignacion sola
                 if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
                     if((id = (Variable)ts.buscarSimbolo(ctx.ID().getText())) == null) {
-                        System.out.println("variable " + ctx.ID().getText() + " not declared");
+                        System.out.println("listener: variable " + ctx.ID().getText() + " not declared");
                         return;
                     }
                 }
-                else {
+                else {//creo que esta mal porque no asigna a las que no estan en contexto local
                     id.setInit(true);
                     return;
                 }
             }
         }
 
+        //asignacion con declaracion
         if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
             ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, true));
             return;
         }
         else {
-            System.out.println("variable " + ctx.ID().getText() + " redefined");
+            System.out.println("listener: variable " + ctx.ID().getText() + " redefined");
             return;
         }            
     }
-
+    
     @Override
-    public void enterFactor(FactorContext ctx) {
-    }
-
-    @Override
-    public void exitFactor(FactorContext ctx) {
+    public void exitFuncion(FuncionContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
-        Variable id;
-
-        if(ctx.ID() != null) {
-            if((id = (Variable)ts.buscarSimboloLocal(ctx.ID().getText())) != null) {
-                if(id.getInit()) {
-                    id.setUsado(true);
-                    return;
-                }
-            }
-            else if((id = (Variable)ts.buscarSimbolo(ctx.ID().getText())) != null) {
-                if(id.getInit()) {
-                    id.setUsado(true);
-                    return;
-                }
-            }
-                
-            System.out.println("variable " + ctx.ID().getText() + " not defined");
+        
+        if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
+            ts.addSimbolo(new Funcion(ctx.ID().getText(), TipoDato.INT, false, true));
             return;
         }
-    }
-
-    @Override
-    public void enterSecvar(SecvarContext ctx) {
-        //System.out.println(" -- secvar in --> |" + ctx.ID() + "|");
+        else {
+            System.out.println("listener: function " + ctx.ID().getText() + " redefined");
+            return;
+        }            
     }
 
     @Override
     public void exitSecvar(SecvarContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         
-        if(ctx.ID() != null) {
+        if(ctx.ID() != null && ctx.getParent() instanceof DeclaracionContext) {//secvar en declaracion
             if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
                 ts.addSimbolo(new Variable(ctx.ID().getText(), TipoDato.INT, false, false));
                 return;
             }
             else {
-                System.out.println("variable " + ctx.ID().getText() + " redeclared");
+                System.out.println("listener: variable " + ctx.ID().getText() + " redeclared");
                 return;
+            }
+        }
+        
+        //secvar en funcall
+        ParserRuleContext prc = ctx;
+        if(ctx.ID() != null) {
+            while((prc = prc.getParent()) != null) {
+                if(prc instanceof Fun_callContext) {
+                    setVarUsed(ctx.ID().getText());
+                }
             }
         }
     }
 
     @Override
-    public void enterDeclaracion(DeclaracionContext ctx) {
-        //System.out.println(" -- declaracion in --> |" + ctx.secvar() + "|");
+    public void exitFactor(FactorContext ctx) {
+        if(ctx.ID() != null) {
+            setVarUsed(ctx.ID().getText());
+        }
     }
-    
+
     @Override
     public void exitDeclaracion(DeclaracionContext ctx) {
-       // System.out.println(" -- declaracion out --> |" + ctx.secvar().getText() + "|");
+        //System.out.println("symbol: " + ctx.TIPO().getSymbol().getText() + " " + ctx.TIPO().getText() + ": " + ctx.TIPO().getSymbol().getTokenIndex());
+        if(ctx.TIPO().getSymbol().getTokenIndex() - 1 == declaracionesParser.VOID) // revisar
+            System.out.println("listener: void variable not allowed");
+    }
+        
+    @Override
+    public void exitParams(ParamsContext ctx) {
+    }
+
+    @Override
+    public void exitSec_params(Sec_paramsContext ctx) {
+    }
+
+    private void setVarUsed(String id_name) {
+        Variable id;
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+
+        if((id = (Variable)ts.buscarSimboloLocal(id_name)) != null) {
+            if(id.getInit()) {
+                id.setUsado(true);
+                return;
+            }
+        }
+        else if((id = (Variable)ts.buscarSimbolo(id_name)) != null) {
+            if(id.getInit()) {
+                id.setUsado(true);
+                return;
+            }
+        }
+        else{
+            System.out.println("listener: variable " + id_name + " not declared");
+            return;
+        }
+        
+        System.out.println("listener: variable " + id_name + " not defined");
+        return;
     }
 }
 /*
