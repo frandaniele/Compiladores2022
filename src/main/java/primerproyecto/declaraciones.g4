@@ -70,9 +70,11 @@ instruccion : declaracion { System.out.println("parser: declaracion ok"); }
             | fun_call PYC { System.out.println("parser: llamado funcion ok"); }
 	         ;
 
-funcion : TIPO ID PA params PC bloque
-        | TIPO ID PA params PC PYC
+funcion : fun_dec PA params PC bloque
+        | fun_dec PA params PC PYC
         ;
+
+fun_dec : TIPO ID;
 
 fun_call : ID PA secvar PC 
          | ID PA PC 

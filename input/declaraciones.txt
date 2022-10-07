@@ -1,12 +1,14 @@
-int main(int argc, char argv)
-{
-    char i =3;
-    int x=3,z, y = 3;
-    void x = 3;
+int main(int argc, char argv, int g);
 
-    void p(){
-        return 1;
-    }
+int main(int argc, char argv, int g)
+{
+    
+    char i=3;
+}
+int main(int argc, char argv, int g)
+{
+    
+    char i=3;
 }
 
 main();

@@ -6,8 +6,9 @@ import primerproyecto.declaracionesParser.AsignacionContext;
 import primerproyecto.declaracionesParser.BloqueContext;
 import primerproyecto.declaracionesParser.DeclaracionContext;
 import primerproyecto.declaracionesParser.FactorContext;
-import primerproyecto.declaracionesParser.Fun_callContext;
 import primerproyecto.declaracionesParser.FuncionContext;
+import primerproyecto.declaracionesParser.Fun_callContext;
+import primerproyecto.declaracionesParser.Fun_decContext;
 import primerproyecto.declaracionesParser.IforContext;
 import primerproyecto.declaracionesParser.ParamsContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
@@ -57,47 +58,35 @@ public class Escucha extends declaracionesBaseListener {
         while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && prc != null);//si es declaracion o si es null salgo
 
         if(prc == null) {//es una asignacion sola
-            if((id = ts.buscarSimboloLocal(ctx.ID().getText())) != null) {
+            if((id = ts.buscarSimboloLocal(ctx.ID().getText())) != null) 
                 id.setInit(true);
-                return;
-            }
-
-            if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) {
+            else if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
                 id.setInit(true);
-                return;
-            }
-
-            System.out.println("listener: variable " + ctx.ID().getText() + " not declared");
-            return;
+            else
+                System.out.println("listener: variable " + ctx.ID().getText() + " not declared");
         }
-
-        //asignacion con declaracion
-        if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {
+        else if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {//asignacion con declaracion
             DeclaracionContext p = (DeclaracionContext)prc;
             TipoDato t = getTipo(p.TIPO().getText());
 
             ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
-            return;
         }
         else {
             System.out.println("listener: variable " + ctx.ID().getText() + " redefined");
-            return;
         }            
     }
     
     @Override
-    public void exitFuncion(FuncionContext ctx) {
+    public void exitFun_dec(Fun_decContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         
         if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
             TipoDato t = getTipo(ctx.TIPO().getText());
-            
+
             ts.addSimbolo(new Funcion(ctx.ID().getText(), t, false, true));
-            return;
         }
         else {
             System.out.println("listener: function " + ctx.ID().getText() + " redefined");
-            return;
         }            
     }
 
@@ -116,19 +105,60 @@ public class Escucha extends declaracionesBaseListener {
                     TipoDato t = getTipo(p.TIPO().getText());
 
                     ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, false));
-                    return;
                 }
                 else {
                     System.out.println("listener: variable " + ctx.ID().getText() + " redeclared");
-                    return;
                 }
             }
-            
-            if(prc instanceof Fun_callContext) {//secvar en funcall
+            else if(prc instanceof Fun_callContext) {//secvar en funcall
                 setVarUsed(ctx.ID().getText());
-                return;
             }
         }       
+    }
+    
+    @Override
+    public void exitParams(ParamsContext ctx) {
+        //hacer el while hasta obtener el ppio, sacar el id de la func
+        //y addparams
+        //los dos iguales
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        Id id;
+        Funcion f;
+
+        if(ctx.ID() != null) {
+            if((id = ts.buscarSimboloLocal(((FuncionContext) ctx.getParent()).fun_dec().ID().getText())) != null) {
+                f = (Funcion)id;
+                f.addArg(getTipo(ctx.TIPO().getText()));
+            }
+            else if((id = ts.buscarSimbolo(((FuncionContext) ctx.getParent()).fun_dec().ID().getText())) != null) {
+                f = (Funcion)id;
+                f.addArg(getTipo(ctx.TIPO().getText()));
+            }
+        }
+    }
+
+    @Override
+    public void exitSec_params(Sec_paramsContext ctx) {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        ParserRuleContext prc = ctx;
+        Id id;
+        Funcion f;
+
+        while((!((prc = prc.getParent()) instanceof FuncionContext)) && (prc != null));
+        
+        if(ctx.ID() != null) {
+            if(prc instanceof FuncionContext) {//secvar en declaracion
+                FuncionContext fc = (FuncionContext) prc;
+                if((id = ts.buscarSimboloLocal(fc.fun_dec().ID().getText())) != null) {
+                    f = (Funcion)id;
+                    f.addArg(getTipo(ctx.TIPO().getText()));
+                }
+                else if((id = ts.buscarSimbolo(fc.fun_dec().ID().getText())) != null) {
+                    f = (Funcion)id;
+                    f.addArg(getTipo(ctx.TIPO().getText()));
+                }
+            }
+        }
     }
 
     @Override
@@ -149,14 +179,6 @@ public class Escucha extends declaracionesBaseListener {
     public void exitDeclaracion(DeclaracionContext ctx) {
         if(ctx.TIPO().getText().equals("void"))
             System.out.println("listener: void variable not allowed");
-    }
-
-    @Override
-    public void exitParams(ParamsContext ctx) {
-    }
-
-    @Override
-    public void exitSec_params(Sec_paramsContext ctx) {
     }
 
     private void setVarUsed(String id_name) {

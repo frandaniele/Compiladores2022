@@ -22,6 +22,7 @@ public class Funcion extends Id {
     }    
     
     public void addArg(TipoDato td) {
+        System.out.println("FUncion: agrego param " + td.toString());
         args.add(td);
     }
 }
