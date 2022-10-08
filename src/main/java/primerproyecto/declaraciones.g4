@@ -58,27 +58,25 @@ instrucciones : instruccion instrucciones
               |
               ;
 		
-instruccion : declaracion { System.out.println("parser: declaracion ok"); }
-            | bloque { System.out.println("parser: bloque ok"); }
-            | iwhile { System.out.println("parser: while ok"); }
-            | i_if { System.out.println("parser: if ok"); }
-            | ireturn { System.out.println("parser: return ok"); }
-            | ifor { System.out.println("parser: for ok"); }
-            | funcion { System.out.println("parser: declaracion funcion ok"); }
-            | asignacion PYC { System.out.println("parser: asignacion ok"); }
-            | op PYC { System.out.println("parser: op ok"); }
-            | fun_call PYC { System.out.println("parser: llamado funcion ok"); }
+instruccion : declaracion //{ System.out.println("parser: declaracion ok"); }
+            | bloque //{ System.out.println("parser: bloque ok"); }
+            | iwhile //{ System.out.println("parser: while ok"); }
+            | i_if //{ System.out.println("parser: if ok"); }
+            | ireturn //{ System.out.println("parser: return ok"); }
+            | ifor //{ System.out.println("parser: for ok"); }
+            | funcion //{ System.out.println("parser: declaracion funcion ok"); }
+            | asignacion PYC //{ System.out.println("parser: asignacion ok"); }
+            | op PYC //{ System.out.println("parser: op ok"); }
+            | fun_call PYC //{ System.out.println("parser: llamado funcion ok"); }
 	         ;
 
-funcion : fun_dec PA params PC bloque
-        | fun_dec PA params PC PYC
+funcion : fun_dec bloque
+        | prototipo
         ;
 
-fun_dec : TIPO ID;
+prototipo : fun_dec PYC;
 
-fun_call : ID PA secvar PC 
-         | ID PA PC 
-         ;
+fun_dec : TIPO ID PA params PC;
 
 params : TIPO ID sec_params
        |
@@ -87,6 +85,10 @@ params : TIPO ID sec_params
 sec_params : COMA TIPO ID sec_params
            | 
            ;
+
+fun_call : ID PA secvar PC 
+         | ID PA PC 
+         ;
 
 bloque : LLA instrucciones LLC ;
 

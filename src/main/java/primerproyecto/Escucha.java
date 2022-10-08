@@ -6,12 +6,13 @@ import primerproyecto.declaracionesParser.AsignacionContext;
 import primerproyecto.declaracionesParser.BloqueContext;
 import primerproyecto.declaracionesParser.DeclaracionContext;
 import primerproyecto.declaracionesParser.FactorContext;
-import primerproyecto.declaracionesParser.FuncionContext;
 import primerproyecto.declaracionesParser.Fun_callContext;
 import primerproyecto.declaracionesParser.Fun_decContext;
+import primerproyecto.declaracionesParser.FuncionContext;
 import primerproyecto.declaracionesParser.IforContext;
 import primerproyecto.declaracionesParser.ParamsContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
+import primerproyecto.declaracionesParser.PrototipoContext;
 import primerproyecto.declaracionesParser.Sec_paramsContext;
 import primerproyecto.declaracionesParser.SecvarContext;
 
@@ -79,15 +80,41 @@ public class Escucha extends declaracionesBaseListener {
     @Override
     public void exitFun_dec(Fun_decContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
-        
-        if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
-            TipoDato t = getTipo(ctx.TIPO().getText());
+        Funcion fun = (Funcion)ts.buscarSimboloLocal(ctx.ID().getText());
 
-            ts.addSimbolo(new Funcion(ctx.ID().getText(), t, false, true));
+        if(fun == null) {//agrego nueva funcion
+            TipoDato t = getTipo(ctx.TIPO().getText());
+            Boolean prot = false;
+
+            if(ctx.getParent() instanceof PrototipoContext)
+                prot = true;
+
+            Funcion f = new Funcion(ctx.ID().getText(), t, false, true, prot);
+
+            if(ctx.getChild(3).getChildCount() != 0) {//hay params
+                f.addArg(getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText()));
+
+                if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
+                    Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
+                    
+                    while(spc.getChildCount() != 0) {//itero secparams
+                        f.addArg(getTipo(spc.TIPO().getText()));
+                        
+                        if(spc.getChild(3) instanceof Sec_paramsContext)
+                            spc = (Sec_paramsContext)spc.getChild(3);
+                        else
+                            break;
+                    }
+                }
+            }
+
+            ts.addSimbolo(f);
         }
-        else {
+        else if(!fun.getPrototipo() & !(ctx.getParent() instanceof PrototipoContext)){//me fijo si la declare en prototipo y no es prototipo para saber si avisar redefinida o no
             System.out.println("listener: function " + ctx.ID().getText() + " redefined");
         }            
+        else //si ya prototipe y declaro la func lo marco
+            fun.setPrototipo(false);
     }
 
     @Override
@@ -116,51 +143,6 @@ public class Escucha extends declaracionesBaseListener {
         }       
     }
     
-    @Override
-    public void exitParams(ParamsContext ctx) {
-        //hacer el while hasta obtener el ppio, sacar el id de la func
-        //y addparams
-        //los dos iguales
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        Id id;
-        Funcion f;
-
-        if(ctx.ID() != null) {
-            if((id = ts.buscarSimboloLocal(((FuncionContext) ctx.getParent()).fun_dec().ID().getText())) != null) {
-                f = (Funcion)id;
-                f.addArg(getTipo(ctx.TIPO().getText()));
-            }
-            else if((id = ts.buscarSimbolo(((FuncionContext) ctx.getParent()).fun_dec().ID().getText())) != null) {
-                f = (Funcion)id;
-                f.addArg(getTipo(ctx.TIPO().getText()));
-            }
-        }
-    }
-
-    @Override
-    public void exitSec_params(Sec_paramsContext ctx) {
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        ParserRuleContext prc = ctx;
-        Id id;
-        Funcion f;
-
-        while((!((prc = prc.getParent()) instanceof FuncionContext)) && (prc != null));
-        
-        if(ctx.ID() != null) {
-            if(prc instanceof FuncionContext) {//secvar en declaracion
-                FuncionContext fc = (FuncionContext) prc;
-                if((id = ts.buscarSimboloLocal(fc.fun_dec().ID().getText())) != null) {
-                    f = (Funcion)id;
-                    f.addArg(getTipo(ctx.TIPO().getText()));
-                }
-                else if((id = ts.buscarSimbolo(fc.fun_dec().ID().getText())) != null) {
-                    f = (Funcion)id;
-                    f.addArg(getTipo(ctx.TIPO().getText()));
-                }
-            }
-        }
-    }
-
     @Override
     public void exitFactor(FactorContext ctx) {
         if(ctx.ID() != null) {//si hay un id en una operacion aritmetica logica, se considera usada
