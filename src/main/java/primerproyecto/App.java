@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 public class App 
 {
@@ -36,17 +37,17 @@ public class App
 
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial
-        parser.programa();
+        //parser.programa();
 
-        // ParseTree tree =  parser.s();
+        ParseTree tree =  parser.programa();
         // Conectamos el visitor
-        // Caminante visitor = new Caminante();
-        // visitor.visit(tree);
-        // System.out.println(visitor);
+        Visitor visitor = new Visitor();
+        visitor.visit(tree);
+        System.out.println(visitor);
         // System.out.println(visitor.getErrorNodes());
         
         // Imprime el arbol obtenido
-        // System.out.println(tree.toStringTree(parser));
+        //System.out.println(tree.toStringTree(parser));
         // System.out.println(escucha);
         
     }
