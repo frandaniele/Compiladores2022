@@ -41,9 +41,9 @@ public class App
 
         ParseTree tree =  parser.programa();
         // Conectamos el visitor
-        Visitor visitor = new Visitor();
-        visitor.visit(tree);
-        System.out.println(visitor);
+       // Visitor visitor = new Visitor();
+        //visitor.visit(tree);
+      //  System.out.println(visitor);
         // System.out.println(visitor.getErrorNodes());
         
         // Imprime el arbol obtenido

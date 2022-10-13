@@ -32,7 +32,8 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void enterBloque(BloqueContext ctx) {
-        agregarContexto();
+        if(!(ctx.getParent() instanceof FuncionContext))//ya agregue el contexto en la funcion
+            agregarContexto();
     }
     
     @Override
@@ -82,24 +83,72 @@ public class Escucha extends declaracionesBaseListener {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         Funcion fun = (Funcion)ts.buscarSimboloLocal(ctx.ID().getText());
 
-        if(fun == null) {//agrego nueva funcion
+        if(fun == null) {//cuando no existe la funcion en este contexto
             TipoDato t = getTipo(ctx.TIPO().getText());
-            Boolean prot = false;
 
-            if(ctx.getParent() instanceof PrototipoContext)
-                prot = true;
+            Funcion f = new Funcion(ctx.ID().getText(), t, false, false);
+            ts.addSimbolo(f);
 
-            Funcion f = new Funcion(ctx.ID().getText(), t, false, true, prot);
+            if(ctx.getParent() instanceof PrototipoContext) //es prototipo, solo agrego simbolo
+                return;
+            else {//es declaracion de funcion, agrego los params y su contexto
+                f.setInit(true);
+                agregarContexto(); //contexto de la funcion
+
+                if(ctx.getChild(3).getChildCount() != 0) {//hay params
+                    TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
+
+                    f.addArg(t_variable);
+                    ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, false));
+
+                    if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
+                        Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
+                        
+                        while(spc.getChildCount() != 0) {//itero secparams
+                            t_variable = getTipo(spc.TIPO().getText());
+
+                            f.addArg(t_variable);
+                            ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, false));
+                            
+                            if(spc.getChild(3) instanceof Sec_paramsContext)
+                                spc = (Sec_paramsContext)spc.getChild(3);
+                            else
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        else {//cuando el simbolo ya esta
+            //ver de si fue prototipada que se pueda declarar
+            //si fue declarada rechazar
+            if(fun.getInit()) {//ya fue inicializada
+                System.out.println("listener: function " + ctx.ID().getText() + " redefined");
+                agregarContexto(); //ver, lo pongo para que no haya errores
+                return;
+            }
+
+            if(ctx.getParent() instanceof PrototipoContext) //es prototipo, no pasa nada
+                return;
+
+            fun.setInit(true);
+            agregarContexto(); //contexto de la funcion
 
             if(ctx.getChild(3).getChildCount() != 0) {//hay params
-                f.addArg(getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText()));
+                TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
+
+                fun.addArg(t_variable);
+                ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, false));
 
                 if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
                     Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
-                    
-                    while(spc.getChildCount() != 0) {//itero secparams
-                        f.addArg(getTipo(spc.TIPO().getText()));
                         
+                    while(spc.getChildCount() != 0) {//itero secparams
+                        t_variable = getTipo(spc.TIPO().getText());
+
+                        fun.addArg(t_variable);
+                        ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, false));
+                            
                         if(spc.getChild(3) instanceof Sec_paramsContext)
                             spc = (Sec_paramsContext)spc.getChild(3);
                         else
@@ -107,14 +156,7 @@ public class Escucha extends declaracionesBaseListener {
                     }
                 }
             }
-
-            ts.addSimbolo(f);
         }
-        else if(!fun.getPrototipo() & !(ctx.getParent() instanceof PrototipoContext)){//me fijo si la declare en prototipo y no es prototipo para saber si avisar redefinida o no
-            System.out.println("listener: function " + ctx.ID().getText() + " redefined");
-        }            
-        else //si ya prototipe y declaro la func lo marco
-            fun.setPrototipo(false);
     }
 
     @Override
