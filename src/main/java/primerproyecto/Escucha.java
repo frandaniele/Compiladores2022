@@ -92,70 +92,20 @@ public class Escucha extends declaracionesBaseListener {
             if(ctx.getParent() instanceof PrototipoContext) //es prototipo, solo agrego simbolo
                 return;
             else {//es declaracion de funcion, agrego los params y su contexto
-                f.setInit(true);
-                agregarContexto(); //contexto de la funcion
-
-                if(ctx.getChild(3).getChildCount() != 0) {//hay params
-                    TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
-
-                    f.addArg(t_variable);
-                    ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, false));
-
-                    if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
-                        Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
-                        
-                        while(spc.getChildCount() != 0) {//itero secparams
-                            t_variable = getTipo(spc.TIPO().getText());
-
-                            f.addArg(t_variable);
-                            ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, false));
-                            
-                            if(spc.getChild(3) instanceof Sec_paramsContext)
-                                spc = (Sec_paramsContext)spc.getChild(3);
-                            else
-                                break;
-                        }
-                    }
-                }
+                addArgsToFunAndTS(f, ctx, ts);
             }
         }
         else {//cuando el simbolo ya esta
-            //ver de si fue prototipada que se pueda declarar
-            //si fue declarada rechazar
             if(fun.getInit()) {//ya fue inicializada
                 System.out.println("listener: function " + ctx.ID().getText() + " redefined");
                 agregarContexto(); //ver, lo pongo para que no haya errores
-                return;
+            return;
             }
 
             if(ctx.getParent() instanceof PrototipoContext) //es prototipo, no pasa nada
                 return;
 
-            fun.setInit(true);
-            agregarContexto(); //contexto de la funcion
-
-            if(ctx.getChild(3).getChildCount() != 0) {//hay params
-                TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
-
-                fun.addArg(t_variable);
-                ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, false));
-
-                if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
-                    Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
-                        
-                    while(spc.getChildCount() != 0) {//itero secparams
-                        t_variable = getTipo(spc.TIPO().getText());
-
-                        fun.addArg(t_variable);
-                        ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, false));
-                            
-                        if(spc.getChild(3) instanceof Sec_paramsContext)
-                            spc = (Sec_paramsContext)spc.getChild(3);
-                        else
-                            break;
-                    }
-                }
-            }
+            addArgsToFunAndTS(fun, ctx, ts);
         }
     }
 
@@ -203,6 +153,34 @@ public class Escucha extends declaracionesBaseListener {
     public void exitDeclaracion(DeclaracionContext ctx) {
         if(ctx.TIPO().getText().equals("void"))
             System.out.println("listener: void variable not allowed");
+    }
+
+    private void addArgsToFunAndTS(Funcion f, Fun_decContext ctx, TablaSimbolos ts) {
+        f.setInit(true);
+        agregarContexto(); //contexto de la funcion
+
+        if(ctx.getChild(3).getChildCount() != 0) {//hay params
+            TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
+
+            f.addArg(t_variable);
+            ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, false));
+
+            if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
+                Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
+                        
+                while(spc.getChildCount() != 0) {//itero secparams
+                    t_variable = getTipo(spc.TIPO().getText());
+
+                    f.addArg(t_variable);
+                    ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, false));
+                            
+                    if(spc.getChild(3) instanceof Sec_paramsContext)
+                        spc = (Sec_paramsContext)spc.getChild(3);
+                    else
+                        break;
+                }
+            }
+        }
     }
 
     private void setVarUsed(String id_name) {
