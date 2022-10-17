@@ -17,7 +17,7 @@ import primerproyecto.declaracionesParser.Sec_paramsContext;
 import primerproyecto.declaracionesParser.SecvarContext;
 
 public class Escucha extends declaracionesBaseListener {
-    private Integer args = 1;
+    private Integer args_dec = 1, cant_args = 0;//para los parametros de funciones
 
     @Override
     public void enterPrograma(ProgramaContext ctx) {
@@ -65,16 +65,19 @@ public class Escucha extends declaracionesBaseListener {
             if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
                 id.setInit(true);
             else
-                System.out.println("listener: variable " + ctx.ID().getText() + " not declared");
+                System.out.println("error: ´" + ctx.ID().getText() + "´ undefined (first use in this function)");
         }
         else if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {//asignacion con declaracion
             DeclaracionContext p = (DeclaracionContext)prc;
             TipoDato t = getTipo(p.TIPO().getText());
 
-            ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
+            if(p.TIPO().getText().equals("void"))
+                System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
+            else 
+                ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
         }
         else //ya esta definida
-            System.out.println("listener: variable " + ctx.ID().getText() + " redefined");
+            System.out.println("error: redefinition of " + ctx.ID().getText());
     }
     
     @Override
@@ -95,7 +98,7 @@ public class Escucha extends declaracionesBaseListener {
         }
         else {//cuando el simbolo ya esta
             if(fun.getInit()) {//ya fue inicializada
-                System.out.println("listener: function " + ctx.ID().getText() + " redefined");
+                System.out.println("error: redefinition of " + ctx.ID().getText());
                 agregarContexto(); //ver, lo pongo para que no haya errores (el contexto no importa)
                 //el problema es cuando entro al bloque las declaraciones no deberian hacerse
             }
@@ -120,21 +123,27 @@ public class Escucha extends declaracionesBaseListener {
                     DeclaracionContext p = (DeclaracionContext)prc;
                     TipoDato t = getTipo(p.TIPO().getText());
 
-                    ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, false));
+                    if(p.TIPO().getText().equals("void"))
+                        System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
+                    else 
+                        ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, false));
                 }
                 else {
-                    System.out.println("listener: variable " + ctx.ID().getText() + " redeclared");
+                    System.out.println("Error: redeclaration of " + ctx.ID().getText());
                 }
             }
             else if(prc instanceof Fun_callContext) {//secvar en funcall
                 Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
-                Variable var = (Variable)ts.buscarSimbolo(ctx.ID().getText());//ver con buscar local
-                TipoDato tipo_esperado = fun.getArgs().get(fun.getArgs().size() - args++);
+            //    Variable var = (Variable)ts.buscarSimbolo(ctx.ID().getText());//ver con buscar local
 
-                if(var.getTipo() == tipo_esperado)
+                cant_args = fun.getArgs().size();
+                args_dec++;
+               // TipoDato tipo_esperado = fun.getArgs().get(cant_args - args_dec++);
+
+                /*if(var.getTipo() == tipo_esperado)
                     setVarUsed(ctx.ID().getText());
                 else 
-                    System.out.println("listener: variable " + ctx.ID().getText() + " is " + var.getTipo() + ". Expected " + tipo_esperado);
+                    System.out.println("Variable " + ctx.ID().getText() + " is " + var.getTipo() + ". Expected " + tipo_esperado);*/
             }
         }       
     }
@@ -149,15 +158,14 @@ public class Escucha extends declaracionesBaseListener {
     @Override
     public void exitFun_call(Fun_callContext ctx) {
         if(ctx.ID() != null) {//llamo a una funcion, la marco como usada
-            args = 1;
-            setVarUsed(ctx.ID().getText());
+            if(cant_args == args_dec - 1) 
+                setVarUsed(ctx.ID().getText());
+            else
+                System.out.println("In function " + ctx.ID().getText() + ": expected "+ cant_args + " arguments and got " + (args_dec - 1));
         }
-    }
 
-    @Override
-    public void exitDeclaracion(DeclaracionContext ctx) {
-        if(ctx.TIPO().getText().equals("void"))
-            System.out.println("listener: void variable not allowed");
+        args_dec = 1;
+        cant_args = 0;
     }
 
     //agrega los parametros de las funciones al objeto funcion y a la tabla de simbolos
@@ -197,10 +205,10 @@ public class Escucha extends declaracionesBaseListener {
             if(id.getInit()) 
                 id.setUsado(true);
             else
-                System.out.println("listener: variable " + id_name + " not defined");
+                System.out.println("error: ´" + id_name + "´ undefined (first use in this function)");
         }
         else
-            System.out.println("listener: variable " + id_name + " not declared");
+            System.out.println("error: ´" + id_name + "´ undeclared (first use in this function)");
     }
     
     private TipoDato getTipo(String t) {

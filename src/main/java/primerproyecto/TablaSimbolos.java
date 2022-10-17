@@ -1,6 +1,7 @@
 package primerproyecto;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -32,15 +33,13 @@ public final class TablaSimbolos {
     }
 
     public void delContext() {
-        printTabla();     
-
         for(Id id : lista.getLast().values()){ 
             if(id.getUsado() == false) {
-                System.out.println("tabla: variable " + id.getNombre() + " not used");
+                System.out.println("variable " + id.getNombre() + " not used");
             }
 
             if(id.getInit() == false) {
-                System.out.println("tabla: variable " + id.getNombre() + " never defined");
+                System.out.println("variable " + id.getNombre() + " never defined");
             }
         }
 
@@ -52,11 +51,14 @@ public final class TablaSimbolos {
     }
 
     public Id buscarSimbolo(String id) {//probablemente sea mas eficiente buscar desde el ultimo contexto
-        for(Map<String, Id> context : lista) {
+        Iterator<Map<String, Id>> x = lista.descendingIterator(); 
+  
+        while (x.hasNext()) { 
+            Map<String, Id> context = x.next();
             if(context.containsKey(id))
                 return context.get(id);
-        }
-
+        } 
+        
         return null;
     }
 
