@@ -17,6 +17,8 @@ import primerproyecto.declaracionesParser.Sec_paramsContext;
 import primerproyecto.declaracionesParser.SecvarContext;
 
 public class Escucha extends declaracionesBaseListener {
+    private Integer args = 1;
+
     @Override
     public void enterPrograma(ProgramaContext ctx) {
         System.out.println("Comienza compilacion\n*************COMPILACION*************\n");
@@ -60,9 +62,7 @@ public class Escucha extends declaracionesBaseListener {
         while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && prc != null);//si es declaracion o si es null salgo
 
         if(prc == null) {//es una asignacion sola
-            if((id = ts.buscarSimboloLocal(ctx.ID().getText())) != null) 
-                id.setInit(true);
-            else if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
+            if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
                 id.setInit(true);
             else
                 System.out.println("listener: variable " + ctx.ID().getText() + " not declared");
@@ -73,9 +73,8 @@ public class Escucha extends declaracionesBaseListener {
 
             ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
         }
-        else {
+        else //ya esta definida
             System.out.println("listener: variable " + ctx.ID().getText() + " redefined");
-        }            
     }
     
     @Override
@@ -91,21 +90,19 @@ public class Escucha extends declaracionesBaseListener {
 
             if(ctx.getParent() instanceof PrototipoContext) //es prototipo, solo agrego simbolo
                 return;
-            else {//es declaracion de funcion, agrego los params y su contexto
+            else //es declaracion de funcion, agrego los params y su contexto
                 addArgsToFunAndTS(f, ctx, ts);
-            }
         }
         else {//cuando el simbolo ya esta
             if(fun.getInit()) {//ya fue inicializada
                 System.out.println("listener: function " + ctx.ID().getText() + " redefined");
-                agregarContexto(); //ver, lo pongo para que no haya errores
-            return;
+                agregarContexto(); //ver, lo pongo para que no haya errores (el contexto no importa)
+                //el problema es cuando entro al bloque las declaraciones no deberian hacerse
             }
-
-            if(ctx.getParent() instanceof PrototipoContext) //es prototipo, no pasa nada
-                return;
-
-            addArgsToFunAndTS(fun, ctx, ts);
+            else if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
+                return; 
+            else //inicializo la funcion
+                addArgsToFunAndTS(fun, ctx, ts);
         }
     }
 
@@ -130,7 +127,14 @@ public class Escucha extends declaracionesBaseListener {
                 }
             }
             else if(prc instanceof Fun_callContext) {//secvar en funcall
-                setVarUsed(ctx.ID().getText());
+                Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
+                Variable var = (Variable)ts.buscarSimbolo(ctx.ID().getText());//ver con buscar local
+                TipoDato tipo_esperado = fun.getArgs().get(fun.getArgs().size() - args++);
+
+                if(var.getTipo() == tipo_esperado)
+                    setVarUsed(ctx.ID().getText());
+                else 
+                    System.out.println("listener: variable " + ctx.ID().getText() + " is " + var.getTipo() + ". Expected " + tipo_esperado);
             }
         }       
     }
@@ -145,6 +149,7 @@ public class Escucha extends declaracionesBaseListener {
     @Override
     public void exitFun_call(Fun_callContext ctx) {
         if(ctx.ID() != null) {//llamo a una funcion, la marco como usada
+            args = 1;
             setVarUsed(ctx.ID().getText());
         }
     }
@@ -155,6 +160,7 @@ public class Escucha extends declaracionesBaseListener {
             System.out.println("listener: void variable not allowed");
     }
 
+    //agrega los parametros de las funciones al objeto funcion y a la tabla de simbolos
     private void addArgsToFunAndTS(Funcion f, Fun_decContext ctx, TablaSimbolos ts) {
         f.setInit(true);
         agregarContexto(); //contexto de la funcion
@@ -163,7 +169,7 @@ public class Escucha extends declaracionesBaseListener {
             TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
 
             f.addArg(t_variable);
-            ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, false));
+            ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, true)); //init true xq supuestamente estaria inicializado
 
             if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
                 Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
@@ -172,7 +178,7 @@ public class Escucha extends declaracionesBaseListener {
                     t_variable = getTipo(spc.TIPO().getText());
 
                     f.addArg(t_variable);
-                    ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, false));
+                    ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, true));
                             
                     if(spc.getChild(3) instanceof Sec_paramsContext)
                         spc = (Sec_paramsContext)spc.getChild(3);
@@ -187,25 +193,14 @@ public class Escucha extends declaracionesBaseListener {
         Id id;
         TablaSimbolos ts = TablaSimbolos.getInstance();
 
-        if((id = ts.buscarSimboloLocal(id_name)) != null) {
-            if(id.getInit()) {
+        if((id = ts.buscarSimbolo(id_name)) != null) {
+            if(id.getInit()) 
                 id.setUsado(true);
-                return;
-            }
+            else
+                System.out.println("listener: variable " + id_name + " not defined");
         }
-        else if((id = ts.buscarSimbolo(id_name)) != null) {
-            if(id.getInit()) {
-                id.setUsado(true);
-                return;
-            }
-        }
-        else{
+        else
             System.out.println("listener: variable " + id_name + " not declared");
-            return;
-        }
-        
-        System.out.println("listener: variable " + id_name + " not defined");
-        return;
     }
     
     private TipoDato getTipo(String t) {
