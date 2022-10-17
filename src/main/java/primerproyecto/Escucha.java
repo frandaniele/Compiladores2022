@@ -10,6 +10,7 @@ import primerproyecto.declaracionesParser.Fun_callContext;
 import primerproyecto.declaracionesParser.Fun_decContext;
 import primerproyecto.declaracionesParser.FuncionContext;
 import primerproyecto.declaracionesParser.IforContext;
+import primerproyecto.declaracionesParser.OpContext;
 import primerproyecto.declaracionesParser.ParamsContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
 import primerproyecto.declaracionesParser.PrototipoContext;
@@ -134,16 +135,15 @@ public class Escucha extends declaracionesBaseListener {
             }
             else if(prc instanceof Fun_callContext) {//secvar en funcall
                 Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
-            //    Variable var = (Variable)ts.buscarSimbolo(ctx.ID().getText());//ver con buscar local
 
-                cant_args = fun.getArgs().size();
-                args_dec++;
-               // TipoDato tipo_esperado = fun.getArgs().get(cant_args - args_dec++);
+                if(fun == null)
+                    System.out.println("warning: implicit declaration of function ´" + ((Fun_callContext) prc).ID().getText() + "´");
+                else {
+                    cant_args = fun.getArgs().size();
+                    args_dec++;                    
+                }
 
-                /*if(var.getTipo() == tipo_esperado)
-                    setVarUsed(ctx.ID().getText());
-                else 
-                    System.out.println("Variable " + ctx.ID().getText() + " is " + var.getTipo() + ". Expected " + tipo_esperado);*/
+                setVarUsed(ctx.ID().getText());    
             }
         }       
     }
@@ -153,6 +153,11 @@ public class Escucha extends declaracionesBaseListener {
         if(ctx.ID() != null) {//si hay un id en una operacion aritmetica logica, se considera usada
             setVarUsed(ctx.ID().getText());
         }
+    }
+
+    @Override
+    public void exitOp(OpContext ctx) {
+        setVarUsed(ctx.ID().getText());
     }
 
     @Override
