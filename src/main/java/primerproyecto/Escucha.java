@@ -162,11 +162,26 @@ public class Escucha extends declaracionesBaseListener {
 
     @Override
     public void exitFun_call(Fun_callContext ctx) {
-        if(ctx.ID() != null) {//llamo a una funcion, la marco como usada
-            if(cant_args == args_dec - 1) 
-                setVarUsed(ctx.ID().getText());
+        if(ctx.ID() != null) {
+            TablaSimbolos ts = TablaSimbolos.getInstance();
+            Funcion f = (Funcion)ts.buscarSimbolo(ctx.ID().getText());
+            
+            if(ctx.getParent() instanceof FactorContext) {//chequeo que no sea una funcion void cuando es asignacion
+
+                if(f != null) {
+                    if(f.getTipo().toString().equals("VOID")) {
+                        System.out.println("error: void value not ignored as it ought to be");
+                        return;
+                    }
+                }
+            }
+            //es una llamada no en asignacion
+            if(cant_args != args_dec - 1) 
+                System.out.println("In function " + ctx.ID().getText() + ": expected " + cant_args + " arguments and got " + (args_dec - 1));
+            else if(f.getArgs().size() != 0 && ctx.secvar() == null)
+                System.out.println("In function " + ctx.ID().getText() + ": expected " + f.getArgs().size() + " arguments and got 0");
             else
-                System.out.println("In function " + ctx.ID().getText() + ": expected "+ cant_args + " arguments and got " + (args_dec - 1));
+                setVarUsed(ctx.ID().getText());
         }
 
         args_dec = 1;
