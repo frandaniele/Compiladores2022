@@ -6,6 +6,7 @@ import primerproyecto.declaracionesParser.AsignacionContext;
 import primerproyecto.declaracionesParser.BloqueContext;
 import primerproyecto.declaracionesParser.DeclaracionContext;
 import primerproyecto.declaracionesParser.FactorContext;
+import primerproyecto.declaracionesParser.Fc_paramsContext;
 import primerproyecto.declaracionesParser.Fun_callContext;
 import primerproyecto.declaracionesParser.Fun_decContext;
 import primerproyecto.declaracionesParser.FuncionContext;
@@ -64,15 +65,16 @@ public class Escucha extends declaracionesBaseListener {
         ParserRuleContext prc = ctx;
         Id id;
 
-        while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && prc != null);//si es declaracion o si es null salgo
+        while((!(prc instanceof DeclaracionContext)) && (!(prc instanceof Fc_paramsContext)) && (!(prc instanceof IforContext)) && prc != null)//si es declaracion o si es null salgo
+            prc = prc.getParent();
 
-        if(prc == null) {//es una asignacion sola
+        if(prc == null || prc instanceof Fc_paramsContext || prc instanceof IforContext) {//instruccion -> asignacion | ifor -> asignacion | fc_params -> asignacion
             if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
                 id.setInit(true);
             else
                 System.out.println("error: ´" + ctx.ID().getText() + "´ undefined (first use in this function)");
         }
-        else if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {//asignacion con declaracion
+        else if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {//declaracion -> secvar -> asignacion 
             DeclaracionContext p = (DeclaracionContext)prc;
             TipoDato t = getTipo(p.TIPO().getText());
 
@@ -144,8 +146,8 @@ public class Escucha extends declaracionesBaseListener {
         ParserRuleContext prc = ctx;
 
         if(!redefinition) {//si es el bloque de una funcion redefinida no hago nada
-            //declaracion funcall o null salgo, xq solo me interesa si viene de alguna de esas
-            while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && !(prc instanceof Fun_callContext)  && (prc != null));
+            //declaracion o null salgo
+            while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && (prc != null));
 
             if(ctx.ID() != null) {
                 if(prc instanceof DeclaracionContext) {//secvar en declaracion
@@ -161,19 +163,7 @@ public class Escucha extends declaracionesBaseListener {
                     else {
                         System.out.println("Error: redeclaration of " + ctx.ID().getText());
                     }
-                }
-                else if(prc instanceof Fun_callContext) {//secvar en funcall
-                    Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
-
-                    if(fun == null)
-                        System.out.println("warning: implicit declaration of function ´" + ((Fun_callContext) prc).ID().getText() + "´");
-                    else {
-                        cant_args = fun.getArgs().size();
-                        args_dec++;                    
-                    }
-
-                    setVarUsed(ctx.ID().getText());    
-                }
+                }                
             }      
         } 
     }
@@ -196,27 +186,45 @@ public class Escucha extends declaracionesBaseListener {
         if(ctx.ID() != null && !redefinition) {
             TablaSimbolos ts = TablaSimbolos.getInstance();
             Funcion f = (Funcion)ts.buscarSimbolo(ctx.ID().getText());
-            
-            if(ctx.getParent() instanceof FactorContext) {//chequeo que no sea una funcion void cuando es asignacion
-
-                if(f != null) {
+                        
+            if(f != null) {
+                if(ctx.getParent() instanceof FactorContext) {//chequeo que no sea una funcion void cuando es asignacion
                     if(f.getTipo().toString().equals("VOID")) {
                         System.out.println("error: void value not ignored as it ought to be");
                         return;
                     }
                 }
+                //es una llamada no en asignacion
+                if(cant_args != args_dec - 1) 
+                    System.out.println("In function " + ctx.ID().getText() + ": expected " + cant_args + " arguments and got " + (args_dec - 1));
+                else if(f.getArgs().size() != 0 && ctx.fc_params() == null)
+                    System.out.println("In function " + ctx.ID().getText() + ": expected " + f.getArgs().size() + " arguments and got 0");
+                else
+                    setVarUsed(ctx.ID().getText());
             }
-            //es una llamada no en asignacion
-            if(cant_args != args_dec - 1) 
-                System.out.println("In function " + ctx.ID().getText() + ": expected " + cant_args + " arguments and got " + (args_dec - 1));
-            else if(f.getArgs().size() != 0 && ctx.secvar() == null)
-                System.out.println("In function " + ctx.ID().getText() + ": expected " + f.getArgs().size() + " arguments and got 0");
             else
-                setVarUsed(ctx.ID().getText());
+                System.out.println("warning: implicit declaration of function ´" + ctx.ID().getText() + "´");
         }
 
         args_dec = 1;
         cant_args = 0;
+    }
+
+    @Override
+    public void exitFc_params(Fc_paramsContext ctx) {
+        TablaSimbolos ts = TablaSimbolos.getInstance();
+        
+        ParserRuleContext prc = ctx;
+        while((!((prc = prc.getParent()) instanceof Fun_callContext)) && (prc != null));
+        
+        Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
+        if(fun != null) {
+            cant_args = fun.getArgs().size();
+            args_dec++;                    
+            
+            if(ctx.ID() != null)
+                setVarUsed(ctx.ID().getText());    
+        }
     }
 
     //agrega los parametros de las funciones al objeto funcion y a la tabla de simbolos

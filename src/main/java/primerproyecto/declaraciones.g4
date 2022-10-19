@@ -86,8 +86,18 @@ sec_params : COMA TIPO ID sec_params
            | 
            ;
 
-fun_call : ID PA secvar PC 
-         | ID PA PC 
+fun_call : ID PA fc_params PC 
+         ;
+
+fc_params: ID COMA fc_params
+         | ID
+         | SYMBOL COMA fc_params
+         | SYMBOL
+         | ENTERO COMA fc_params
+         | ENTERO
+         | asignacion COMA fc_params
+         | asignacion
+         |
          ;
 
 bloque : LLA instrucciones LLC ;
