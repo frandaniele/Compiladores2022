@@ -10,6 +10,8 @@ import primerproyecto.declaracionesParser.Fun_callContext;
 import primerproyecto.declaracionesParser.Fun_decContext;
 import primerproyecto.declaracionesParser.FuncionContext;
 import primerproyecto.declaracionesParser.IforContext;
+import primerproyecto.declaracionesParser.InstruccionesContext;
+import primerproyecto.declaracionesParser.IreturnContext;
 import primerproyecto.declaracionesParser.OpContext;
 import primerproyecto.declaracionesParser.ParamsContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
@@ -19,6 +21,7 @@ import primerproyecto.declaracionesParser.SecvarContext;
 
 public class Escucha extends declaracionesBaseListener {
     private Integer args_dec = 1, cant_args = 0;//para los parametros de funciones
+    private Boolean redefinition = false;//para ver si estoy redefiniendo funcion y evito entrar al bloque
 
     @Override
     public void enterPrograma(ProgramaContext ctx) {
@@ -41,7 +44,8 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void exitBloque(BloqueContext ctx) {
-        eliminarContexto();
+        if(!redefinition)//si es un bloque de una funcion redefinida no hago nada
+            eliminarContexto();
     }
     
     @Override
@@ -82,9 +86,34 @@ public class Escucha extends declaracionesBaseListener {
     }
     
     @Override
+    public void exitFuncion(FuncionContext ctx) {
+        if(!redefinition) {
+            if(ctx.getChild(0) instanceof Fun_decContext) { //si declaro la funcion y no es void reviso que haya return
+                if(!(((Fun_decContext) ctx.getChild(0)).TIPO().getText().equals("void"))) {//no es void
+                    Boolean flag_return = false;
+                    
+                    InstruccionesContext insts = (InstruccionesContext) ctx.getChild(1).getChild(1);//funcion -> bloque -> instrucciones
+                    
+                    while(!(insts.getText().equals(""))) {
+                        if(insts.getChild(0).getChild(0) instanceof IreturnContext) //instruccion -> ireturn
+                            flag_return = true;
+
+                        insts = (InstruccionesContext) insts.getChild(1);//instrucciones -> instrucciones
+                    }
+                    
+                    if(!flag_return)
+                        System.out.println("error: control reaches end of non-void function");
+                }
+            }
+        }
+        redefinition = false;
+    }
+
+    @Override
     public void exitFun_dec(Fun_decContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         Funcion fun = (Funcion)ts.buscarSimboloLocal(ctx.ID().getText());
+        redefinition = false;
 
         if(fun == null) {//cuando no existe la funcion en este contexto
             TipoDato t = getTipo(ctx.TIPO().getText());
@@ -100,8 +129,7 @@ public class Escucha extends declaracionesBaseListener {
         else {//cuando el simbolo ya esta
             if(fun.getInit()) {//ya fue inicializada
                 System.out.println("error: redefinition of " + ctx.ID().getText());
-                agregarContexto(); //ver, lo pongo para que no haya errores (el contexto no importa)
-                //el problema es cuando entro al bloque las declaraciones no deberian hacerse
+                redefinition = true;
             }
             else if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
                 return; 
@@ -115,54 +143,57 @@ public class Escucha extends declaracionesBaseListener {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         ParserRuleContext prc = ctx;
 
-        //declaracion funcall o null salgo, xq solo me interesa si viene de alguna de esas
-        while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && !(prc instanceof Fun_callContext)  && (prc != null));
+        if(!redefinition) {//si es el bloque de una funcion redefinida no hago nada
+            //declaracion funcall o null salgo, xq solo me interesa si viene de alguna de esas
+            while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && !(prc instanceof Fun_callContext)  && (prc != null));
 
-        if(ctx.ID() != null) {
-            if(prc instanceof DeclaracionContext) {//secvar en declaracion
-                if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
-                    DeclaracionContext p = (DeclaracionContext)prc;
-                    TipoDato t = getTipo(p.TIPO().getText());
+            if(ctx.ID() != null) {
+                if(prc instanceof DeclaracionContext) {//secvar en declaracion
+                    if(ts.buscarSimboloLocal(ctx.ID().getText()) == null) {
+                        DeclaracionContext p = (DeclaracionContext)prc;
+                        TipoDato t = getTipo(p.TIPO().getText());
 
-                    if(p.TIPO().getText().equals("void"))
-                        System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
-                    else 
-                        ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, false));
+                        if(p.TIPO().getText().equals("void"))
+                            System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
+                        else 
+                            ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, false));
+                    }
+                    else {
+                        System.out.println("Error: redeclaration of " + ctx.ID().getText());
+                    }
                 }
-                else {
-                    System.out.println("Error: redeclaration of " + ctx.ID().getText());
-                }
-            }
-            else if(prc instanceof Fun_callContext) {//secvar en funcall
-                Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
+                else if(prc instanceof Fun_callContext) {//secvar en funcall
+                    Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
 
-                if(fun == null)
-                    System.out.println("warning: implicit declaration of function ´" + ((Fun_callContext) prc).ID().getText() + "´");
-                else {
-                    cant_args = fun.getArgs().size();
-                    args_dec++;                    
-                }
+                    if(fun == null)
+                        System.out.println("warning: implicit declaration of function ´" + ((Fun_callContext) prc).ID().getText() + "´");
+                    else {
+                        cant_args = fun.getArgs().size();
+                        args_dec++;                    
+                    }
 
-                setVarUsed(ctx.ID().getText());    
-            }
-        }       
+                    setVarUsed(ctx.ID().getText());    
+                }
+            }      
+        } 
     }
     
     @Override
     public void exitFactor(FactorContext ctx) {
-        if(ctx.ID() != null) {//si hay un id en una operacion aritmetica logica, se considera usada
+        if(ctx.ID() != null && !redefinition) {//si hay un id en una operacion aritmetica logica, se considera usada
             setVarUsed(ctx.ID().getText());
         }
     }
 
     @Override
     public void exitOp(OpContext ctx) {
-        setVarUsed(ctx.ID().getText());
+        if(!redefinition)
+            setVarUsed(ctx.ID().getText());
     }
 
     @Override
     public void exitFun_call(Fun_callContext ctx) {
-        if(ctx.ID() != null) {
+        if(ctx.ID() != null && !redefinition) {
             TablaSimbolos ts = TablaSimbolos.getInstance();
             Funcion f = (Funcion)ts.buscarSimbolo(ctx.ID().getText());
             
