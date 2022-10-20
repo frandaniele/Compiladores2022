@@ -39,7 +39,7 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void enterBloque(BloqueContext ctx) {
-        if(!(ctx.getParent() instanceof FuncionContext))//ya agregue el contexto en la funcion
+        if(!(ctx.getParent() instanceof FuncionContext) && !redefinition)//ya agregue el contexto en la funcion
             agregarContexto();
     }
     
@@ -51,12 +51,14 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void enterIfor(IforContext ctx) {
-        agregarContexto();
+        if(!redefinition)
+            agregarContexto();
     }
     
     @Override
     public void exitIfor(IforContext ctx) {
-        eliminarContexto();
+        if(!redefinition)
+            eliminarContexto();
     }
     
     @Override
@@ -65,26 +67,28 @@ public class Escucha extends declaracionesBaseListener {
         ParserRuleContext prc = ctx;
         Id id;
 
-        while((!(prc instanceof DeclaracionContext)) && (!(prc instanceof Fc_paramsContext)) && (!(prc instanceof IforContext)) && prc != null)//si es declaracion o si es null salgo
-            prc = prc.getParent();
+        if(!redefinition) {
+            while((!(prc instanceof DeclaracionContext)) && (!(prc instanceof Fc_paramsContext)) && (!(prc instanceof IforContext)) && prc != null)//si es declaracion o si es null salgo
+                prc = prc.getParent();
 
-        if(prc == null || prc instanceof Fc_paramsContext || prc instanceof IforContext) {//instruccion -> asignacion | ifor -> asignacion | fc_params -> asignacion
-            if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
-                id.setInit(true);
-            else
-                System.out.println("error: ´" + ctx.ID().getText() + "´ undefined (first use in this function)");
-        }
-        else if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {//declaracion -> secvar -> asignacion 
-            DeclaracionContext p = (DeclaracionContext)prc;
-            TipoDato t = getTipo(p.TIPO().getText());
+            if(prc == null || prc instanceof Fc_paramsContext || prc instanceof IforContext) {//instruccion -> asignacion | ifor -> asignacion | fc_params -> asignacion
+                if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
+                    id.setInit(true);
+                else
+                    System.out.println("error: ´" + ctx.ID().getText() + "´ undefined (first use in this function)");
+            }
+            else if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {//declaracion -> secvar -> asignacion 
+                DeclaracionContext p = (DeclaracionContext)prc;
+                TipoDato t = getTipo(p.TIPO().getText());
 
-            if(p.TIPO().getText().equals("void"))
-                System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
-            else 
-                ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
+                if(p.TIPO().getText().equals("void"))
+                    System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
+                else 
+                    ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
+            }
+            else //ya esta definida
+                System.out.println("error: redefinition of " + ctx.ID().getText());
         }
-        else //ya esta definida
-            System.out.println("error: redefinition of " + ctx.ID().getText());
     }
     
     @Override
@@ -96,11 +100,13 @@ public class Escucha extends declaracionesBaseListener {
                     
                     InstruccionesContext insts = (InstruccionesContext) ctx.getChild(1).getChild(1);//funcion -> bloque -> instrucciones
                     
-                    while(!(insts.getText().equals(""))) {
-                        if(insts.getChild(0).getChild(0) instanceof IreturnContext) //instruccion -> ireturn
-                            flag_return = true;
+                    if(insts != null) {
+                        while(!(insts.getText().equals(""))) {
+                            if(insts.getChild(0).getChild(0) instanceof IreturnContext) //instruccion -> ireturn
+                                flag_return = true;
 
-                        insts = (InstruccionesContext) insts.getChild(1);//instrucciones -> instrucciones
+                            insts = (InstruccionesContext) insts.getChild(1);//instrucciones -> instrucciones
+                        }
                     }
                     
                     if(!flag_return)
@@ -108,7 +114,6 @@ public class Escucha extends declaracionesBaseListener {
                 }
             }
         }
-        redefinition = false;
     }
 
     @Override
@@ -129,12 +134,12 @@ public class Escucha extends declaracionesBaseListener {
                 addArgsToFunAndTS(f, ctx, ts);
         }
         else {//cuando el simbolo ya esta
-            if(fun.getInit()) {//ya fue inicializada
+            if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
+                return; 
+            else if(fun.getInit()) {//ya fue inicializada
                 System.out.println("error: redefinition of " + ctx.ID().getText());
                 redefinition = true;
             }
-            else if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
-                return; 
             else //inicializo la funcion
                 addArgsToFunAndTS(fun, ctx, ts);
         }
@@ -212,18 +217,21 @@ public class Escucha extends declaracionesBaseListener {
 
     @Override
     public void exitFc_params(Fc_paramsContext ctx) {
-        TablaSimbolos ts = TablaSimbolos.getInstance();
-        
-        ParserRuleContext prc = ctx;
-        while((!((prc = prc.getParent()) instanceof Fun_callContext)) && (prc != null));
-        
-        Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
-        if(fun != null) {
-            cant_args = fun.getArgs().size();
-            args_dec++;                    
+        if(!redefinition) {  
+            TablaSimbolos ts = TablaSimbolos.getInstance();
             
-            if(ctx.ID() != null)
-                setVarUsed(ctx.ID().getText());    
+            ParserRuleContext prc = ctx;
+            while((!((prc = prc.getParent()) instanceof Fun_callContext)) && (prc != null));
+            
+            Funcion fun = (Funcion)ts.buscarSimbolo(((Fun_callContext) prc).ID().getText());
+            if(fun != null) {
+                cant_args = fun.getArgs().size();
+                if(!(ctx.getText().equals("")))//no es la regla vacia
+                    args_dec++;                    
+                
+                if(ctx.ID() != null)//no es simbolo ni entero
+                    setVarUsed(ctx.ID().getText());    
+            }
         }
     }
 
