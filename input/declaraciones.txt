@@ -1,14 +1,12 @@
-int main(int argc, char argv, int g);
+int main() {
+    int b=3.36, c,a=4*5-18;
+    char z = 'b', b = 3.0;
 
-int main(int argc, char argv, int g)
-{
-    
-    char i=3;
-}
-int main(int argc, char argv, int g)
-{
-    
-    char i=3;
-}
+    c = z*a;
 
-main();
+    for(int i = 0; i < 33; i++){
+        b++;
+    }    
+
+    return 3;
+}
