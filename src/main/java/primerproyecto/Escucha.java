@@ -22,7 +22,8 @@ import primerproyecto.declaracionesParser.SecvarContext;
 
 public class Escucha extends declaracionesBaseListener {
     private Integer args_dec = 1, cant_args = 0;//para los parametros de funciones
-    private Boolean redefinition = false;//para ver si estoy redefiniendo funcion y evito entrar al bloque
+    private Boolean redefinition = false;//para ver si estoy redefiniendo funcion y evito instrucciones
+    private Boolean in_function = false, nested = true;//no permito nested funcs
 
     @Override
     public void enterPrograma(ProgramaContext ctx) {
@@ -39,25 +40,25 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void enterBloque(BloqueContext ctx) {
-        if(!(ctx.getParent() instanceof FuncionContext) && !redefinition)//ya agregue el contexto en la funcion
+        if(!(ctx.getParent() instanceof FuncionContext) && !redefinition && !nested)//ya agregue el contexto en la funcion
             agregarContexto();
     }
     
     @Override
     public void exitBloque(BloqueContext ctx) {
-        if(!redefinition)//si es un bloque de una funcion redefinida no hago nada
+        if(!redefinition && !nested)//si es un bloque de una funcion redefinida no hago nada
             eliminarContexto();
     }
     
     @Override
     public void enterIfor(IforContext ctx) {
-        if(!redefinition)
+        if(!redefinition && !nested)
             agregarContexto();
     }
     
     @Override
     public void exitIfor(IforContext ctx) {
-        if(!redefinition)
+        if(!redefinition && !nested)
             eliminarContexto();
     }
     
@@ -67,7 +68,7 @@ public class Escucha extends declaracionesBaseListener {
         ParserRuleContext prc = ctx;
         Id id;
 
-        if(!redefinition) {
+        if(!redefinition && !nested) {
             while((!(prc instanceof DeclaracionContext)) && (!(prc instanceof Fc_paramsContext)) && (!(prc instanceof IforContext)) && prc != null)//si es declaracion o si es null salgo
                 prc = prc.getParent();
 
@@ -93,7 +94,7 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void exitFuncion(FuncionContext ctx) {
-        if(!redefinition) {
+        if(!redefinition && !nested) {
             if(ctx.getChild(0) instanceof Fun_decContext) { //si declaro la funcion y no es void reviso que haya return
                 if(!(((Fun_decContext) ctx.getChild(0)).TIPO().getText().equals("void"))) {//no es void
                     Boolean flag_return = false;
@@ -114,6 +115,9 @@ public class Escucha extends declaracionesBaseListener {
                 }
             }
         }
+
+        if(!nested)
+            in_function = false;
     }
 
     @Override
@@ -121,27 +125,34 @@ public class Escucha extends declaracionesBaseListener {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         Funcion fun = (Funcion)ts.buscarSimboloLocal(ctx.ID().getText());
         redefinition = false;
+        nested = false;
 
-        if(fun == null) {//cuando no existe la funcion en este contexto
-            TipoDato t = getTipo(ctx.TIPO().getText());
+        if(!in_function) {
+            if(fun == null) {//cuando no existe la funcion en este contexto
+                TipoDato t = getTipo(ctx.TIPO().getText());
 
-            Funcion f = new Funcion(ctx.ID().getText(), t, false, false);
-            ts.addSimbolo(f);
+                Funcion f = new Funcion(ctx.ID().getText(), t, false, false);
+                ts.addSimbolo(f);
 
-            if(ctx.getParent() instanceof PrototipoContext) //es prototipo, solo agrego simbolo
-                return;
-            else //es declaracion de funcion, agrego los params y su contexto
-                addArgsToFunAndTS(f, ctx, ts);
-        }
-        else {//cuando el simbolo ya esta
-            if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
-                return; 
-            else if(fun.getInit()) {//ya fue inicializada
-                System.out.println("error: redefinition of " + ctx.ID().getText());
-                redefinition = true;
+                if(ctx.getParent() instanceof PrototipoContext) //es prototipo, solo agrego simbolo
+                    return;
+                else //es declaracion de funcion, agrego los params y su contexto
+                    addArgsToFunAndTS(f, ctx, ts);
             }
-            else //inicializo la funcion
-                addArgsToFunAndTS(fun, ctx, ts);
+            else {//cuando el simbolo ya esta
+                if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
+                    return; 
+                else if(fun.getInit()) {//ya fue inicializada
+                    System.out.println("error: redefinition of " + ctx.ID().getText());
+                    redefinition = true;
+                }
+                else //inicializo la funcion
+                    addArgsToFunAndTS(fun, ctx, ts);
+            }
+        }
+        else {
+            System.out.println("error: ISO C forbids nested functions");
+            nested = true;
         }
     }
 
@@ -150,7 +161,7 @@ public class Escucha extends declaracionesBaseListener {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         ParserRuleContext prc = ctx;
 
-        if(!redefinition) {//si es el bloque de una funcion redefinida no hago nada
+        if(!redefinition && !nested) {//si es el bloque de una funcion redefinida no hago nada
             //declaracion o null salgo
             while((!((prc = prc.getParent()) instanceof DeclaracionContext)) && (prc != null));
 
@@ -175,20 +186,20 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void exitFactor(FactorContext ctx) {
-        if(ctx.ID() != null && !redefinition) {//si hay un id en una operacion aritmetica logica, se considera usada
+        if(ctx.ID() != null && !redefinition && !nested) {//si hay un id en una operacion aritmetica logica, se considera usada
             setVarUsed(ctx.ID().getText());
         }
     }
 
     @Override
     public void exitOp(OpContext ctx) {
-        if(!redefinition)
+        if(!redefinition && !nested)
             setVarUsed(ctx.ID().getText());
     }
 
     @Override
     public void exitFun_call(Fun_callContext ctx) {
-        if(ctx.ID() != null && !redefinition) {
+        if(ctx.ID() != null && !redefinition && !nested) {
             TablaSimbolos ts = TablaSimbolos.getInstance();
             Funcion f = (Funcion)ts.buscarSimbolo(ctx.ID().getText());
                         
@@ -217,7 +228,7 @@ public class Escucha extends declaracionesBaseListener {
 
     @Override
     public void exitFc_params(Fc_paramsContext ctx) {
-        if(!redefinition) {  
+        if(!redefinition && !nested) {  
             TablaSimbolos ts = TablaSimbolos.getInstance();
             
             ParserRuleContext prc = ctx;
@@ -239,6 +250,7 @@ public class Escucha extends declaracionesBaseListener {
     private void addArgsToFunAndTS(Funcion f, Fun_decContext ctx, TablaSimbolos ts) {
         f.setInit(true);
         agregarContexto(); //contexto de la funcion
+        in_function = true;
 
         if(ctx.getChild(3).getChildCount() != 0) {//hay params
             TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
