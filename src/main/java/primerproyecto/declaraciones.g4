@@ -4,7 +4,7 @@ grammar declaraciones;
 package primerproyecto;
 }
 
-ENTERO : '-'? [0-9]+ ;
+ENTERO : [0-9]+ ('.' [0-9]+)*;
 WS: [ \n\t\r] -> skip;
 
 RETURN : 'return';
