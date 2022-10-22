@@ -1,88 +1,72 @@
 package primerproyecto;
 
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
-import primerproyecto.declaracionesParser.BloqueContext;
+import primerproyecto.declaracionesParser.AsignacionContext;
 import primerproyecto.declaracionesParser.DeclaracionContext;
 import primerproyecto.declaracionesParser.InstruccionContext;
 import primerproyecto.declaracionesParser.InstruccionesContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
 
 public class Visitor extends declaracionesBaseVisitor<Object> {
-    String texto;
-    Integer indent;
-    List<ErrorNode> errores;
+    private String texto = "";
+    private List<ErrorNode> errores;
+    private static LinkedList<List<String>> simbolos;
     
     public Visitor() {
-        errores = new ArrayList<>();
-        initString();
-    }
-    
-    /**
-     * Inicia el recorrido por el arbol desde el nodo indicado
-     * 
-     * @param tree La raiz desde donde comenzar, puede ser un subarbol
-     */
-    @Override
-    public String visit(ParseTree tree) {
-        return (String) super.visit(tree);
+        errores = new ArrayList<ErrorNode>();
+        simbolos = new LinkedList<List<String>>();
+        readFile();
     }
         
     @Override
     public String visitPrograma(ProgramaContext ctx) {
-        // texto += " -<(prog) " + ctx.getText() + " | " + ctx.">- \n";
-        // texto += " -<(prog) " + ctx.getStart() + " <-> " + ctx.getStop() + ">- \n";
-        // texto += " -<(prog) {" + ctx.getStart().getText() + " <-> " +
-        // ctx.getStop().getText() + "} >- \n";
-        // texto += " -<(prog) {" + ctx.getChildCount() + " hijos -> ";
-        addTextoNodo(ctx, "programa");
-        visitAllHijos(ctx);
-        // texto += "} >- \n";
+        visitChildren(ctx);
+
         return texto;
     }
 
     @Override
     public String visitInstrucciones(InstruccionesContext ctx) {
-        // texto += " -<(instrucciones) " + ctx.getChildCount() + " hijos -> ";
-        addTextoNodo(ctx, "instrucciones");
-        visitAllHijos(ctx.getRuleContext());
-        // texto += "} >- \n";
+        visitChildren(ctx.getRuleContext());
+
         return texto;
     }
     
     @Override
     public String visitInstruccion(InstruccionContext ctx) {
-        addTextoNodo(ctx, "instruccion");
-        visitAllHijos(ctx);
-        // texto += "} >- \n";
+        visitChildren(ctx);
+
         return texto;
     }
     
     @Override
     public String visitDeclaracion(DeclaracionContext ctx) {
-        addTextoNodo(ctx, "declaracion");
-        visitAllHijos(ctx);
+        visitChildren(ctx);
+
         return texto;
     }
-    
+
     @Override
-    public String visitTerminal(TerminalNode node) {
-        addTextoHoja(node.getText());
+    public Object visitAsignacion(AsignacionContext ctx) {
+        System.out.println(ctx.ID().getText() + " = " + ctx.oal().getText());
         return texto;
     }
 
     @Override
     public String visitErrorNode(ErrorNode node) {
         addErrorNode(node);
-        texto += " -<(ERROR) " + node.getText() + "> lin " + node.getSymbol().getLine() + " - \n";
+        
         return texto;
     }
     
@@ -93,59 +77,24 @@ public class Visitor extends declaracionesBaseVisitor<Object> {
     public List<ErrorNode> getErrorNodes () {
         return errores;
     }
-    
-    /**
-     * Visita todos los nodos hijo.
-     * 
-     * @param ctx Contexto del nodo donde estamos parados
-     */
-    public String visitAllHijos(RuleContext ctx) {
-        incrementarIndentacion();
-        for (int hijo = 0; hijo < ctx.getChildCount(); hijo++) {
-            addTextoNuevoNodo();
-            visit(ctx.getChild(hijo));
-        }
-        decrementarIndentacion();
-        return texto;
-    }
 
-    private void initString() {
-        texto = "**Caminante**\n  |\n  +--> ";
-        indent = -1;
-    }
-    
-    private void incrementarIndentacion() {
-        indent += 1;
-    }
-
-    private void decrementarIndentacion() {
-        indent -= 1;
-    }
-
-    private void addTextoNodo(RuleContext ctx, String nombre) {
-        texto += "(" + nombre + ") " + ctx.getChildCount() + " Hijos\n";
-
-    }
-
-    private void addTextoHoja(String nombre) {
-        texto += "token [" + nombre + "]\n";
-    }
-
-    private void addTextoNuevoNodo() {
-        texto += "     " + "  |  ".repeat(indent) + "  +--> ";
-    }
-
-    @Override
-    public String toString() {
-        return texto;
-    }
+    private static void readFile() {
+		try {
+			List<String> allLines = Files.readAllLines(Paths.get("simbolos"));
+			for (String line : allLines) {
+                simbolos.add(new LinkedList<String>());
+                Scanner scan = new Scanner(line.replace("[", "").replace("]", "")).useDelimiter(",");
+                while(scan.hasNext()) {
+                    simbolos.getLast().add(scan.next().trim());
+                }
+                scan.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
     public void writeFile() { 
-        /*  Si queremos añadir al final de un fichero ya existente, 
-            simplemente debemos poner un flag a true como segundo 
-            parámetro del constructor de FileWriter.
-            FileWriter fichero = new FileWriter("c:/prueba.txt",'''true'''); */
-            
         FileWriter fichero = null;
         PrintWriter pw = null;
         
@@ -153,6 +102,7 @@ public class Visitor extends declaracionesBaseVisitor<Object> {
             fichero = new FileWriter("tac");
             pw = new PrintWriter(fichero);
 
+            pw.println("Codigo de 3 direcciones\n-----------------------\n");
             pw.println(texto);
         } 
         catch (Exception e) {
@@ -160,8 +110,6 @@ public class Visitor extends declaracionesBaseVisitor<Object> {
         } 
         finally {
             try {
-           // Nuevamente aprovechamos el finally para 
-           // asegurarnos que se cierra el fichero.
                 if (null != fichero)
                     fichero.close();
             } 

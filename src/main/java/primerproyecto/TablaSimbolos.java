@@ -1,6 +1,7 @@
 package primerproyecto;
 
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,14 +11,21 @@ import java.util.Map;
 public final class TablaSimbolos {
     private LinkedList< Map<String, Id> > lista;
     private static TablaSimbolos instance;
+    private static FileWriter fichero = null;
 
     public TablaSimbolos() {
         this.lista = new LinkedList< Map<String, Id> >();
     }
     
     public static TablaSimbolos getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new TablaSimbolos();
+            try {
+                fichero = new FileWriter("simbolos");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         return instance;
     }
@@ -35,7 +43,7 @@ public final class TablaSimbolos {
     }
 
     public void delContext() {
-        writeFile("Simbolos contexto " + lista.size() + ": "   + lista.getLast().keySet());
+        writeFile(lista.getLast().keySet().toString());
         
         for(Id id : lista.getLast().values()){ 
             if(id.getUsado() == false) {
@@ -48,6 +56,13 @@ public final class TablaSimbolos {
         }
 
         lista.removeLast();
+
+        if(lista.isEmpty())
+            try {
+                fichero.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
     
     public void addSimbolo(Id id) {
@@ -74,28 +89,14 @@ public final class TablaSimbolos {
     }
 
     private void writeFile(String txt) { 
-        FileWriter fichero = null;
         PrintWriter pw = null;
-        
-        try {
-            fichero = new FileWriter("simbolos", true);
-            pw = new PrintWriter(fichero);
 
+        try {
+            pw = new PrintWriter(fichero);
             pw.println(txt);
         } 
         catch (Exception e) {
             e.printStackTrace();
         } 
-        finally {
-            try {
-           // Nuevamente aprovechamos el finally para 
-           // asegurarnos que se cierra el fichero.
-                if (null != fichero)
-                    fichero.close();
-            } 
-            catch (Exception e2) {
-                e2.printStackTrace();
-            }
-        }
     }
 }
