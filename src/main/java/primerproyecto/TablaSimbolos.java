@@ -1,5 +1,7 @@
 package primerproyecto;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,6 +35,8 @@ public final class TablaSimbolos {
     }
 
     public void delContext() {
+        writeFile("Simbolos contexto " + lista.size() + ": "   + lista.getLast().keySet());
+        
         for(Id id : lista.getLast().values()){ 
             if(id.getUsado() == false) {
                 System.out.println("variable " + id.getNombre() + " not used");
@@ -50,10 +54,10 @@ public final class TablaSimbolos {
         lista.getLast().put(id.getNombre(), id); //putIfAbsent?
     }
 
-    public Id buscarSimbolo(String id) {//probablemente sea mas eficiente buscar desde el ultimo contexto
+    public Id buscarSimbolo(String id) {
         Iterator<Map<String, Id>> x = lista.descendingIterator(); 
   
-        while (x.hasNext()) { 
+        while(x.hasNext()) { 
             Map<String, Id> context = x.next();
             if(context.containsKey(id))
                 return context.get(id);
@@ -69,13 +73,29 @@ public final class TablaSimbolos {
         return null;
     }
 
-    private void printTabla() {
-        int c = 0;
-        System.out.println("\n-------------TABLA-------------------\nContextos antes de eliminar el ultimo");
-        for(Map<String, Id> context : lista) {
-            System.out.println("tabla de simbolos " + c + ": " + context.keySet());
-            c++;
+    private void writeFile(String txt) { 
+        FileWriter fichero = null;
+        PrintWriter pw = null;
+        
+        try {
+            fichero = new FileWriter("simbolos", true);
+            pw = new PrintWriter(fichero);
+
+            pw.println(txt);
+        } 
+        catch (Exception e) {
+            e.printStackTrace();
+        } 
+        finally {
+            try {
+           // Nuevamente aprovechamos el finally para 
+           // asegurarnos que se cierra el fichero.
+                if (null != fichero)
+                    fichero.close();
+            } 
+            catch (Exception e2) {
+                e2.printStackTrace();
+            }
         }
-        System.out.println("-------------------------------------\n");
     }
 }
