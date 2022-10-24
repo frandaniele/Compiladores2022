@@ -43,17 +43,20 @@ public final class TablaSimbolos {
     }
 
     public void delContext() {
-        writeFile(lista.getLast().keySet().toString());
-        
+        LinkedList<String> l = new LinkedList<String>();
+
         for(Id id : lista.getLast().values()){ 
             if(id.getUsado() == false) {
                 System.out.println("variable " + id.getNombre() + " not used");
             }
-
-            if(id.getInit() == false) {
+            else if(id.getInit() == false) {
                 System.out.println("variable " + id.getNombre() + " never defined");
             }
+            else
+                l.add(id.getNombre());
         }
+        
+        writeFile(l.toString());
 
         lista.removeLast();
 
