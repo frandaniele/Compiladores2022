@@ -44,7 +44,7 @@ public class App
         Visitor visitor = new Visitor();
         visitor.visit(tree);
         //System.out.println(visitor);
-        visitor.writeFile();
+        //visitor.writeFile();
         //System.out.println("error nodes " + visitor.getErrorNodes());
         
         // Imprime el arbol obtenido
