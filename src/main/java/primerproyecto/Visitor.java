@@ -85,9 +85,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitAsignacion(AsignacionContext ctx) {
         for(HashMap<String, Integer> context : simbolos) {
             if(context.containsKey(ctx.ID().getText())) {
-                GeneradorVars gv = GeneradorVars.getInstance();
                 visitOal(ctx.oal());
-                output += "\n" + ctx.ID().getText() + " = " + "t" + (gv.getNum() - 1);
+                output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
             }
         }
         
@@ -122,13 +121,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
                 
         String op2 = operandos.pop();
                 
-        output += operandos.pop();   
-
-        if(ctx.LOR() != null){
-            output += " " + ctx.LOR().getText() + " ";
-        }
-
-        output += op2;
+        output += operandos.pop() + " " + ctx.LOR().getText() + " " + op2;
         
         operandos.push(gv.getVar());
 
@@ -154,18 +147,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.la().getText().equals("")))
             visitLa(ctx.la());
         
-            GeneradorVars gv = GeneradorVars.getInstance();
+        GeneradorVars gv = GeneradorVars.getInstance();
         output += gv.getNewVar();
             
         String op2 = operandos.pop();
             
-        output += operandos.pop();   
-        
-        if(ctx.LAND() != null){
-            output += " " + ctx.LAND().getText() + " ";
-        }
-
-        output += op2;
+        output += operandos.pop() + " " + ctx.LAND().getText() + " " + op2;
         
         operandos.push(gv.getVar());
 
@@ -196,13 +183,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
                 
         String op2 = operandos.pop();
                 
-        output += operandos.pop();       
-
-        if(ctx.OR() != null){
-            output += " " + ctx.OR().getText() + " ";
-        }
-        
-        output += op2;
+        output += operandos.pop() + " " + ctx.OR().getText() + " " + op2;
         
         operandos.push(gv.getVar());
 
@@ -233,13 +214,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             
         String op2 = operandos.pop();
             
-        output += operandos.pop();   
-
-        if(ctx.AND() != null){
-            output += " " + ctx.AND().getText() + " ";
-        }
-
-        output += op2;
+        output += operandos.pop() + " " + ctx.AND().getText() + " " + op2;
         
         operandos.push(gv.getVar());
 
@@ -270,13 +245,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         
         String op2 = operandos.pop();
         
-        output += operandos.pop();   
-
-        if(ctx.EQUA() != null){
-            output += " " + ctx.EQUA().getText() + " ";
-        }
-
-        output += op2;
+        output += operandos.pop() + " " + ctx.EQUA().getText() + " " + op2;
         
         operandos.push(gv.getVar());
 
@@ -307,13 +276,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     
         String op2 = operandos.pop();
     
-        output += operandos.pop();
-    
-        if(ctx.CMP() != null){
-            output += " " + ctx.CMP().getText() + " ";
-        }
-        
-        output += op2;
+        output += operandos.pop() + " " + ctx.CMP().getText() + " " + op2;
         
         operandos.push(gv.getVar());
 
@@ -355,16 +318,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
         String op2 = operandos.pop();
 
-        output += operandos.pop();
-
         if(ctx.SUMA() != null) {
-            output += " + ";
+            output += operandos.pop() + " + " + op2;
         }
         else if(ctx.RESTA() != null) {
-            output += " - ";
+            output += operandos.pop() + " - " + op2;
         }
-
-        output += op2;
 
         operandos.push(gv.getVar());
 
@@ -479,7 +438,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             fichero = new FileWriter("tac");
             pw = new PrintWriter(fichero);
 
-            pw.println("Codigo de 3 direcciones\n-----------------------\n");
             pw.println(output);
         } 
         catch (Exception e) {

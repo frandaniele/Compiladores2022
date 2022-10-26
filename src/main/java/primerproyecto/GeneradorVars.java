@@ -36,4 +36,8 @@ public class GeneradorVars {
     public void reset() {
         this.num = 0;
     }
+
+    public LinkedList<String> getVars() {
+        return vars;
+    }
 }
