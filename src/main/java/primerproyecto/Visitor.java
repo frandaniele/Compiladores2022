@@ -23,6 +23,7 @@ import primerproyecto.declaracionesParser.EContext;
 import primerproyecto.declaracionesParser.EqualityContext;
 import primerproyecto.declaracionesParser.FContext;
 import primerproyecto.declaracionesParser.FactorContext;
+import primerproyecto.declaracionesParser.I_ifContext;
 import primerproyecto.declaracionesParser.InstruccionContext;
 import primerproyecto.declaracionesParser.InstruccionesContext;
 import primerproyecto.declaracionesParser.LaContext;
@@ -36,11 +37,12 @@ import primerproyecto.declaracionesParser.OrContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
 import primerproyecto.declaracionesParser.RContext;
 import primerproyecto.declaracionesParser.RelationContext;
+import primerproyecto.declaracionesParser.Sec_elifContext;
 import primerproyecto.declaracionesParser.TContext;
 import primerproyecto.declaracionesParser.TermContext;
 
 public class Visitor extends declaracionesBaseVisitor<String> {
-    private String output = "";
+    private String output = "", first_label;
     private List<ErrorNode> errores;
     private static LinkedList<HashMap<String, Integer>> simbolos;
     private LinkedList<String> operandos;
@@ -75,6 +77,58 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     }
     
     @Override
+    public String visitI_if(I_ifContext ctx) {
+        visitOal(ctx.oal());
+
+        Generador g = Generador.getInstance();
+        output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+
+        visitInstruccion(ctx.instruccion());
+        
+        
+        if(!(ctx.sec_elif().getText().equals(""))) {
+            output += "\njmp " + g.getNewLabel();
+            output += "\nlbl " + g.getLabel();
+
+            first_label = g.getLabel();
+
+            visitSec_elif(ctx.sec_elif());
+        }
+        else
+            output += "\nlbl " + g.getLabel();
+            
+        return output;
+    }
+
+    @Override
+    public String visitSec_elif(Sec_elifContext ctx) {
+        Generador g = Generador.getInstance();
+
+        if(ctx.IF() != null) {//es elsif
+            visitOal(ctx.oal());
+            
+            output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+
+            visitInstruccion(ctx.instruccion());
+
+            output += "\njmp " + first_label;
+            output += "\nlbl " + g.getLabel();
+
+            if(!(ctx.sec_elif().getText().equals("")))//si hay otro
+                visitSec_elif(ctx.sec_elif());
+            else
+                output += "\nlbl " + first_label;
+        }
+        else {//es else
+            visitInstruccion(ctx.instruccion());
+            
+            output += "\nlbl " + first_label;
+        }
+
+        return output;
+    }
+
+    @Override
     public String visitDeclaracion(DeclaracionContext ctx) {
         visitChildren(ctx);
 
@@ -85,8 +139,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitAsignacion(AsignacionContext ctx) {
         for(HashMap<String, Integer> context : simbolos) {
             if(context.containsKey(ctx.ID().getText())) {
-                Generador g = Generador.getInstance();
-                g.resetVars();
                 visitOal(ctx.oal());
                 output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
             }
@@ -97,8 +149,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitOal(OalContext ctx) {
-        output += "\n";
-
         visitNoNullChilds(ctx.lor(), ctx.lo());
 
         return output;

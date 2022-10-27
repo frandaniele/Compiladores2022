@@ -52,9 +52,9 @@ public class Generador {
     }
 
     public String getNewLabel() {
-        vars.add("l" + numL);
+        labels.add("l" + numL);
 
-        return "\nlbl l" + numL++;
+        return "l" + numL++;
     }
 
     public void resetVars() {
