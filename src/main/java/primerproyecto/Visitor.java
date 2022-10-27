@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 
 import primerproyecto.declaracionesParser.AnContext;
@@ -99,244 +100,131 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         gv.reset();
         output += "\n";
 
-        if(!(ctx.lor().getText().equals("")))
-            visitLor(ctx.lor());
-
-        if(!(ctx.lo().getText().equals("")))
-            visitLo(ctx.lo());
+        visitNoNullChilds(ctx.lor(), ctx.lo());
 
         return output;
     }
 
     @Override
     public String visitLo(LoContext ctx) {
-        if(!(ctx.lor().getText().equals("")))
-            visitLor(ctx.lor());
-
-        if(!(ctx.lo().getText().equals("")))
-            visitLo(ctx.lo());
-
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
+        visitNoNullChilds(ctx.lor(), ctx.lo());
                 
-        String op2 = operandos.pop();
-                
-        output += operandos.pop() + " " + ctx.LOR().getText() + " " + op2;
-        
-        operandos.push(gv.getVar());
+        printOp(ctx.LOR().getText());
 
         return output;          
     }
 
     @Override
     public String visitLor(LorContext ctx) {
-        if(!(ctx.land().getText().equals("")))
-            visitLand(ctx.land());
-
-        if(!(ctx.lo().getText().equals("")))
-            visitLo(ctx.lo());
+        visitNoNullChilds(ctx.land(), ctx.lo());
 
         return output;
     }
   
     @Override
     public String visitLa(LaContext ctx) {
-        if(!(ctx.land().getText().equals("")))
-            visitLand(ctx.land());
-
-        if(!(ctx.la().getText().equals("")))
-            visitLa(ctx.la());
+        visitNoNullChilds(ctx.land(), ctx.la());
         
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
-            
-        String op2 = operandos.pop();
-            
-        output += operandos.pop() + " " + ctx.LAND().getText() + " " + op2;
-        
-        operandos.push(gv.getVar());
+        printOp(ctx.LAND().getText());
 
         return output;
     }
 
     @Override
     public String visitLand(LandContext ctx) {
-        if(!(ctx.or().getText().equals("")))
-            visitOr(ctx.or());
-
-        if(!(ctx.la().getText().equals("")))
-            visitLa(ctx.la());
+        visitNoNullChilds(ctx.or(), ctx.la());
 
         return output;
     }
 
     @Override
     public String visitO(OContext ctx) {
-        if(!(ctx.or().getText().equals("")))
-            visitOr(ctx.or());
+        visitNoNullChilds(ctx.or(), ctx.o());
 
-        if(!(ctx.o().getText().equals("")))
-            visitO(ctx.o());
-
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
-                
-        String op2 = operandos.pop();
-                
-        output += operandos.pop() + " " + ctx.OR().getText() + " " + op2;
-        
-        operandos.push(gv.getVar());
+        printOp(ctx.OR().getText());
 
         return output; 
     }
 
     @Override
     public String visitOr(OrContext ctx) {
-        if(!(ctx.and().getText().equals("")))
-            visitAnd(ctx.and());
-
-        if(!(ctx.o().getText().equals("")))
-            visitO(ctx.o());
+        visitNoNullChilds(ctx.and(), ctx.o());
 
         return output;
     }
 
     @Override
     public String visitAn(AnContext ctx) {
-        if(!(ctx.and().getText().equals("")))
-            visitAnd(ctx.and());
+        visitNoNullChilds(ctx.and(), ctx.an());
 
-        if(!(ctx.an().getText().equals("")))
-            visitAn(ctx.an());
-
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
-            
-        String op2 = operandos.pop();
-            
-        output += operandos.pop() + " " + ctx.AND().getText() + " " + op2;
-        
-        operandos.push(gv.getVar());
+        printOp(ctx.AND().getText());
 
         return output;
     }
 
     @Override
     public String visitAnd(AndContext ctx) {
-        if(!(ctx.equality().getText().equals("")))
-            visitEquality(ctx.equality());
-
-        if(!(ctx.an().getText().equals("")))
-            visitAn(ctx.an());
+        visitNoNullChilds(ctx.equality(), ctx.an());
 
         return output;
     }
 
     @Override
     public String visitE(EContext ctx) {
-        if(!(ctx.equality().getText().equals("")))
-            visitEquality(ctx.equality());
-
-        if(!(ctx.e().getText().equals("")))
-            visitE(ctx.e());
+        visitNoNullChilds(ctx.equality(), ctx.e());
             
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
-        
-        String op2 = operandos.pop();
-        
-        output += operandos.pop() + " " + ctx.EQUA().getText() + " " + op2;
-        
-        operandos.push(gv.getVar());
+        printOp(ctx.EQUA().getText());
 
         return output;
     }
 
     @Override
     public String visitEquality(EqualityContext ctx) {
-        if(!(ctx.relation().getText().equals("")))
-            visitRelation(ctx.relation());
-
-        if(!(ctx.e().getText().equals("")))
-            visitE(ctx.e());
+        visitNoNullChilds(ctx.relation(), ctx.e());
 
         return output;
     }
 
     @Override
     public String visitR(RContext ctx) {
-        if(!(ctx.arit_exp().getText().equals("")))
-            visitArit_exp(ctx.arit_exp());
-
-        if(!(ctx.r().getText().equals("")))
-            visitR(ctx.r());
+        visitNoNullChilds(ctx.arit_exp(), ctx.r());
             
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
-    
-        String op2 = operandos.pop();
-    
-        output += operandos.pop() + " " + ctx.CMP().getText() + " " + op2;
-        
-        operandos.push(gv.getVar());
+        printOp(ctx.CMP().getText());
 
         return output;
     }
 
     @Override
     public String visitRelation(RelationContext ctx) {
-        if(!(ctx.arit_exp().getText().equals("")))
-            visitArit_exp(ctx.arit_exp());
-
-        if(!(ctx.r().getText().equals("")))
-            visitR(ctx.r());
+        visitNoNullChilds(ctx.arit_exp(), ctx.r());
 
         return output;
     }
 
     @Override
     public String visitArit_exp(Arit_expContext ctx) {
-        if(!(ctx.term().getText().equals("")))
-            visitTerm(ctx.term());
-
-        if(!(ctx.t().getText().equals("")))
-            visitT(ctx.t());
+        visitNoNullChilds(ctx.term(), ctx.t());
 
         return output;
     }
 
     @Override
     public String visitT(TContext ctx) {
-        if(!(ctx.term().getText().equals("")))
-            visitTerm(ctx.term());
-
-        if(!(ctx.t().getText().equals("")))
-            visitT(ctx.t());
-
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
-
-        String op2 = operandos.pop();
+        visitNoNullChilds(ctx.term(), ctx.t());
 
         if(ctx.SUMA() != null) {
-            output += operandos.pop() + " + " + op2;
+            printOp("+");
         }
         else if(ctx.RESTA() != null) {
-            output += operandos.pop() + " - " + op2;
+            printOp("-");
         }
-
-        operandos.push(gv.getVar());
 
         return output;
     }
 
     @Override
     public String visitTerm(TermContext ctx) {
-        if(!(ctx.factor().getText().equals("")))
-            visitFactor(ctx.factor());
-
-        if(!(ctx.f().getText().equals(""))) 
-            visitF(ctx.f());
+        visitNoNullChilds(ctx.factor(), ctx.f());
 
         return output;
     }
@@ -414,6 +302,25 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         return errores;
     }
 
+    private void printOp(String operator) {
+        GeneradorVars gv = GeneradorVars.getInstance();
+        output += gv.getNewVar();
+                
+        String op2 = operandos.pop();
+                
+        output += operandos.pop() + " " + operator + " " + op2;
+        
+        operandos.push(gv.getVar());
+    }
+
+    private void visitNoNullChilds(ParserRuleContext first, ParserRuleContext second) {
+        if(!(first.getText().equals("")))
+            visit(first);
+
+        if(!(second.getText().equals("")))
+            visit(second);
+    }
+
     private static void readFile() {
 		try {
 			List<String> allLines = Files.readAllLines(Paths.get("simbolos"));
@@ -430,7 +337,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 		}
 	}
 
-    public void writeFile() { 
+    private void writeFile() { 
         FileWriter fichero = null;
         PrintWriter pw = null;
         
