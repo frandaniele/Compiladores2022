@@ -24,6 +24,7 @@ import primerproyecto.declaracionesParser.EqualityContext;
 import primerproyecto.declaracionesParser.FContext;
 import primerproyecto.declaracionesParser.FactorContext;
 import primerproyecto.declaracionesParser.I_ifContext;
+import primerproyecto.declaracionesParser.IforContext;
 import primerproyecto.declaracionesParser.InstruccionContext;
 import primerproyecto.declaracionesParser.InstruccionesContext;
 import primerproyecto.declaracionesParser.LaContext;
@@ -124,6 +125,35 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             
             output += "\nlbl " + first_label;
         }
+
+        return output;
+    }
+
+    @Override
+    public String visitIfor(IforContext ctx) {
+        if(!(ctx.asignacion().getText().equals("")))
+            visitAsignacion(ctx.asignacion());
+        else if(!(ctx.declaracion().getText().equals("")))
+            visitDeclaracion(ctx.declaracion());
+    
+        Generador g = Generador.getInstance();
+        output += "\nlbl " + g.getNewLabel();
+
+        if(!(ctx.oal(0).getText().equals(""))) {
+            visitOal(ctx.oal(0));
+            output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+        }
+        
+        if(!(ctx.oal(1).getText().equals("")))//aca me fijo si hay ++x o x++ y depende eso, lo imprimo antes o despues del visitInstruccion
+            visitOal(ctx.oal(1));
+        
+        String lbl_jmp = g.getLabel(), lbl = g.getLabel();//por for anidado
+        
+        if(!(ctx.instruccion().getText().equals("")))
+            visitInstruccion(ctx.instruccion());
+
+        output += "\njmp " + lbl_jmp;
+        output += "\nlbl " + lbl;
 
         return output;
     }
@@ -317,7 +347,13 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         else if(ctx.ID() != null) 
             operandos.push(ctx.ID().getText());
         else if(ctx.op() != null) {
-            output += "op";
+            output += "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
+
+            if(ctx.op().OP().getText().equals("++"))
+                output += " + 1";
+            else
+                output += " - 1";
+
         }
         else if(ctx.oal() != null) {
             output += "oal";
