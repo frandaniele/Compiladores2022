@@ -49,8 +49,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         errores = new ArrayList<ErrorNode>();
         simbolos = new LinkedList<HashMap<String, Integer>>();
         operandos = new LinkedList<String>();
-        new GeneradorLabels();
-        new GeneradorVars();
+        new Generador();
         readFile();
     }
         
@@ -86,6 +85,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitAsignacion(AsignacionContext ctx) {
         for(HashMap<String, Integer> context : simbolos) {
             if(context.containsKey(ctx.ID().getText())) {
+                Generador g = Generador.getInstance();
+                g.resetVars();
                 visitOal(ctx.oal());
                 output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
             }
@@ -96,8 +97,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitOal(OalContext ctx) {
-        GeneradorVars gv = GeneradorVars.getInstance();
-        gv.reset();
         output += "\n";
 
         visitNoNullChilds(ctx.lor(), ctx.lo());
@@ -231,8 +230,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitF(FContext ctx) {
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar() + operandos.pop();
+        Generador g = Generador.getInstance();
+        output += g.getNewVar() + operandos.pop();
 
         if(ctx.MULT() != null) {
             output += " * ";
@@ -249,7 +248,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             
         output += operandos.pop();
 
-        operandos.push(gv.getVar());
+        operandos.push(g.getVar());
 
         if(!(ctx.f().getText().equals("")))
             visitF(ctx.f());
@@ -303,14 +302,14 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     }
 
     private void printOp(String operator) {
-        GeneradorVars gv = GeneradorVars.getInstance();
-        output += gv.getNewVar();
+        Generador g = Generador.getInstance();
+        output += g.getNewVar();
                 
         String op2 = operandos.pop();
                 
         output += operandos.pop() + " " + operator + " " + op2;
         
-        operandos.push(gv.getVar());
+        operandos.push(g.getVar());
     }
 
     private void visitNoNullChilds(ParserRuleContext first, ParserRuleContext second) {
