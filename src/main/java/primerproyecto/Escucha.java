@@ -13,6 +13,7 @@ import primerproyecto.declaracionesParser.FuncionContext;
 import primerproyecto.declaracionesParser.IforContext;
 import primerproyecto.declaracionesParser.InstruccionesContext;
 import primerproyecto.declaracionesParser.IreturnContext;
+import primerproyecto.declaracionesParser.IwhileContext;
 import primerproyecto.declaracionesParser.OpContext;
 import primerproyecto.declaracionesParser.ParamsContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
@@ -63,6 +64,14 @@ public class Escucha extends declaracionesBaseListener {
             eliminarContexto();
     }
     
+    @Override
+    public void exitIwhile(IwhileContext ctx) {
+        if(ctx.oal().getText().equals("")) {
+            error = true;
+            System.out.println("error: expected expression before ‘)’ token");
+        }
+    }
+
     @Override
     public void exitAsignacion(AsignacionContext ctx) {
         TablaSimbolos ts = TablaSimbolos.getInstance();
