@@ -464,7 +464,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.factor().getText().equals("")))
             visitFactor(ctx.factor());
             
-        output += operandos.pop();
+        if(!funcall)
+            output += operandos.pop();
 
         operandos.push(g.getVar());
 
@@ -491,6 +492,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
                 output += " + 1";
             else
                 output += " - 1";
+
+            operandos.push(ctx.op().ID().getText());
         }
         else if(ctx.oal() != null) {
             output += "oal";
