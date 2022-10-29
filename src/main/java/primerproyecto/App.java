@@ -41,8 +41,13 @@ public class App
 
         ParseTree tree =  parser.programa();
         // Conectamos el visitor
-        Visitor visitor = new Visitor();
-        visitor.visit(tree);
+        if(((Escucha) escucha).getError()) {
+            System.out.println("Sintaxis incorrecta. FIN");
+        }
+        else {
+            Visitor visitor = new Visitor();
+            visitor.visit(tree);
+        }
         //System.out.println(visitor);
         //visitor.writeFile();
         //System.out.println("error nodes " + visitor.getErrorNodes());

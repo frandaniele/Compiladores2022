@@ -24,6 +24,7 @@ public class Escucha extends declaracionesBaseListener {
     private Integer args_dec = 1, cant_args = 0;//para los parametros de funciones
     private Boolean redefinition = false;//para ver si estoy redefiniendo funcion y evito instrucciones
     private Boolean in_function = false, nested = true;//no permito nested funcs
+    private Boolean error = false;
 
     @Override
     public void enterPrograma(ProgramaContext ctx) {
@@ -75,20 +76,26 @@ public class Escucha extends declaracionesBaseListener {
             if(prc == null || prc instanceof Fc_paramsContext || prc instanceof IforContext) {//instruccion -> asignacion | ifor -> asignacion | fc_params -> asignacion
                 if((id = ts.buscarSimbolo(ctx.ID().getText())) != null) 
                     id.setInit(true);
-                else
+                else {
+                    error = true;
                     System.out.println("error: ´" + ctx.ID().getText() + "´ undefined (first use in this function)");
+                }
             }
             else if((id = ts.buscarSimboloLocal(ctx.ID().getText())) == null) {//declaracion -> secvar -> asignacion 
                 DeclaracionContext p = (DeclaracionContext)prc;
                 TipoDato t = getTipo(p.TIPO().getText());
 
-                if(p.TIPO().getText().equals("void"))
+                if(p.TIPO().getText().equals("void")) {
+                    error = true;
                     System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
+                }
                 else 
                     ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, true));
             }
-            else //ya esta definida
+            else {//ya esta definida
+                error = true;
                 System.out.println("error: redefinition of " + ctx.ID().getText());
+            } 
         }
     }
     
@@ -110,8 +117,10 @@ public class Escucha extends declaracionesBaseListener {
                         }
                     }
                     
-                    if(!flag_return)
+                    if(!flag_return) {
+                        error = true;
                         System.out.println("error: control reaches end of non-void function");
+                    }
                 }
             }
         }
@@ -143,6 +152,7 @@ public class Escucha extends declaracionesBaseListener {
                 if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
                     return; 
                 else if(fun.getInit()) {//ya fue inicializada
+                    error = true;
                     System.out.println("error: redefinition of " + ctx.ID().getText());
                     redefinition = true;
                 }
@@ -151,6 +161,7 @@ public class Escucha extends declaracionesBaseListener {
             }
         }
         else {
+            error = true;
             System.out.println("error: ISO C forbids nested functions");
             nested = true;
         }
@@ -171,12 +182,15 @@ public class Escucha extends declaracionesBaseListener {
                         DeclaracionContext p = (DeclaracionContext)prc;
                         TipoDato t = getTipo(p.TIPO().getText());
 
-                        if(p.TIPO().getText().equals("void"))
+                        if(p.TIPO().getText().equals("void")) {
+                            error = true;
                             System.out.println("error: variable or field ´" + ctx.ID().getText() + "´ declared void ");
+                        }
                         else 
                             ts.addSimbolo(new Variable(ctx.ID().getText(), t, false, false));
                     }
                     else {
+                        error = true;
                         System.out.println("Error: redeclaration of " + ctx.ID().getText());
                     }
                 }                
@@ -206,20 +220,27 @@ public class Escucha extends declaracionesBaseListener {
             if(f != null) {
                 if(ctx.getParent() instanceof FactorContext) {//chequeo que no sea una funcion void cuando es asignacion
                     if(f.getTipo().toString().equals("VOID")) {
+                        error = true;
                         System.out.println("error: void value not ignored as it ought to be");
                         return;
                     }
                 }
                 //es una llamada no en asignacion
-                if(cant_args != args_dec - 1) 
+                if(cant_args != args_dec - 1) {
+                    error = true;
                     System.out.println("In function " + ctx.ID().getText() + ": expected " + cant_args + " arguments and got " + (args_dec - 1));
-                else if(f.getArgs().size() != 0 && ctx.fc_params() == null)
+                }
+                else if(f.getArgs().size() != 0 && ctx.fc_params() == null) {
+                    error = true;
                     System.out.println("In function " + ctx.ID().getText() + ": expected " + f.getArgs().size() + " arguments and got 0");
+                }
                 else
                     setVarUsed(ctx.ID().getText());
             }
-            else
+            else {
+                error = true;
                 System.out.println("warning: implicit declaration of function ´" + ctx.ID().getText() + "´");
+            }
         }
 
         args_dec = 1;
@@ -283,11 +304,15 @@ public class Escucha extends declaracionesBaseListener {
         if((id = ts.buscarSimbolo(id_name)) != null) {
             if(id.getInit()) 
                 id.setUsado(true);
-            else
+            else {
+                error = true;
                 System.out.println("error: ´" + id_name + "´ undefined (first use in this function)");
+            }
         }
-        else
+        else {
+            error = true;
             System.out.println("error: ´" + id_name + "´ undeclared (first use in this function)");
+        }
     }
     
     private TipoDato getTipo(String t) {
@@ -311,5 +336,9 @@ public class Escucha extends declaracionesBaseListener {
     private void eliminarContexto() {
         TablaSimbolos ts = TablaSimbolos.getInstance();
         ts.delContext();
+    }
+
+    public Boolean getError() {
+        return error;
     }
 }
