@@ -245,7 +245,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFun_call(Fun_callContext ctx) {
-        System.out.println("llamo func desde " + ctx.getParent().getText());
         if(!(ctx.fc_params().getText().equals("")))
             visitFc_params(ctx.fc_params());
 
@@ -264,6 +263,10 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             output += "\npush " + ctx.SYMBOL().getText().charAt(1);
         else if(ctx.ENTERO() != null)
             output += "\npush " + ctx.ENTERO().getText();
+        else if(!(ctx.oal().getText().equals(""))){
+            visitOal(ctx.oal());
+            output += "\npush " + operandos.pop();
+        }
         else if(!(ctx.asignacion().getText().equals("")))
             visitAsignacion(ctx.asignacion());
 
@@ -278,7 +281,9 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitIreturn(IreturnContext ctx) {
         if(!(ctx.oal().getText().equals(""))) {
             visitOal(ctx.oal());
-            output += "\npush " + operandos.pop();
+            
+            if(!funcall)//xq ya se hizo el push en la otra funcion
+                output += "\npush " + operandos.pop();
         }
         
         return output;
@@ -296,17 +301,17 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         for(HashMap<String, Integer> context : simbolos) {
             if(context.containsKey(ctx.ID().getText())) {
                 funcall = false;
-                System.out.println("asignacion desde " + ctx.getParent().getText());
                 visitOal(ctx.oal());
-                
                 
                 if(!funcall)
                     output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
                 else 
                     output += "\npop " + ctx.ID().getText();
+                
+                break;//porque si estaba en 2+ contextos distintos el mismo id lo repetia
             }
         }
-        
+
         return output;
     }
 
@@ -471,10 +476,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFactor(FactorContext ctx) {
-        if(ctx.ENTERO() != null) {
-            System.out.println("Visitor.visitFactor() " + ctx.ENTERO().getText());
+        if(ctx.ENTERO() != null) 
             operandos.push(ctx.ENTERO().getText());
-        }
         else if(ctx.SYMBOL() != null) {
             char c = ctx.SYMBOL().getText().charAt(1);
             operandos.push(String.valueOf(Integer.valueOf(c)));//obtengo ascii del char y lo vuelvo a pasar a str
