@@ -152,21 +152,28 @@ public class Escucha extends declaracionesBaseListener {
                 Funcion f = new Funcion(ctx.ID().getText(), t, false, false);
                 ts.addSimbolo(f);
 
-                if(ctx.getParent() instanceof PrototipoContext) //es prototipo, solo agrego simbolo
+                if(ctx.getParent() instanceof PrototipoContext) {
+                    addArgsToFunAndTS(f, ctx, ts, 0);//prototipo
+                    f.setEstado(1);//esta prototipada
                     return;
-                else //es declaracion de funcion, agrego los params y su contexto
-                    addArgsToFunAndTS(f, ctx, ts);
+                }
+                else { //es declaracion de funcion, agrego los params y su contexto
+                    addArgsToFunAndTS(f, ctx, ts, 1);//inicializacion de funcion SIN prototipo
+                    f.setEstado(2);//esta inicializada
+                }
             }
             else {//cuando el simbolo ya esta
                 if(ctx.getParent() instanceof PrototipoContext)//es prototipo, no pasa nada
                     return; 
-                else if(fun.getInit()) {//ya fue inicializada
+                else if(fun.getEstado() == 2) {//ya fue inicializada
                     error = true;
                     System.out.println("error: redefinition of " + ctx.ID().getText());
                     redefinition = true;
                 }
-                else //inicializo la funcion
-                    addArgsToFunAndTS(fun, ctx, ts);
+                else {//inicializo la funcion
+                    addArgsToFunAndTS(fun, ctx, ts, 2);//inicializacion de funcion CON prototipo
+                    fun.setEstado(2);//fue inicializada
+                }
             }
         }
         else {
@@ -277,25 +284,32 @@ public class Escucha extends declaracionesBaseListener {
     }
 
     //agrega los parametros de las funciones al objeto funcion y a la tabla de simbolos
-    private void addArgsToFunAndTS(Funcion f, Fun_decContext ctx, TablaSimbolos ts) {
+    private void addArgsToFunAndTS(Funcion f, Fun_decContext ctx, TablaSimbolos ts, Integer prototipo) {
         f.setInit(true);
-        agregarContexto(); //contexto de la funcion
-        in_function = true;
+        if(prototipo != 0) {//0 es prototipo, es decir no agrego contexto
+            agregarContexto(); //contexto de la funcion
+            in_function = true;
+        }
 
         if(ctx.getChild(3).getChildCount() != 0) {//hay params
             TipoDato t_variable = getTipo(((ParamsContext)ctx.getChild(3)).TIPO().getText());
+            if(prototipo != 2) //quiere decir que estoy inicializando una funcion que fue prototipada, asi no repito args
+                f.addArg(t_variable);
 
-            f.addArg(t_variable);
-            ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, true)); //init true xq supuestamente estaria inicializado
+            if(prototipo != 0) //no agrego al contexto si es prototipo
+                ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, true)); //init true xq supuestamente estaria inicializado
 
             if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
                 Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
                         
                 while(spc.getChildCount() != 0) {//itero secparams
-                    t_variable = getTipo(spc.TIPO().getText());
-
-                    f.addArg(t_variable);
-                    ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, true));
+                    if(prototipo != 2) {
+                        t_variable = getTipo(spc.TIPO().getText());
+                        f.addArg(t_variable);
+                    }
+                    
+                    if(prototipo != 0)
+                        ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, true));
                             
                     if(spc.getChild(3) instanceof Sec_paramsContext)
                         spc = (Sec_paramsContext)spc.getChild(3);
