@@ -97,6 +97,7 @@ fc_params: ID COMA fc_params
          | ENTERO
          | asignacion COMA fc_params
          | asignacion
+         | oal
          |
          ;
 
