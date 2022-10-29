@@ -23,10 +23,15 @@ import primerproyecto.declaracionesParser.EContext;
 import primerproyecto.declaracionesParser.EqualityContext;
 import primerproyecto.declaracionesParser.FContext;
 import primerproyecto.declaracionesParser.FactorContext;
+import primerproyecto.declaracionesParser.Fc_paramsContext;
+import primerproyecto.declaracionesParser.Fun_callContext;
+import primerproyecto.declaracionesParser.Fun_decContext;
+import primerproyecto.declaracionesParser.FuncionContext;
 import primerproyecto.declaracionesParser.I_ifContext;
 import primerproyecto.declaracionesParser.IforContext;
 import primerproyecto.declaracionesParser.InstruccionContext;
 import primerproyecto.declaracionesParser.InstruccionesContext;
+import primerproyecto.declaracionesParser.IreturnContext;
 import primerproyecto.declaracionesParser.IwhileContext;
 import primerproyecto.declaracionesParser.LaContext;
 import primerproyecto.declaracionesParser.LandContext;
@@ -36,23 +41,28 @@ import primerproyecto.declaracionesParser.OContext;
 import primerproyecto.declaracionesParser.OalContext;
 import primerproyecto.declaracionesParser.OpContext;
 import primerproyecto.declaracionesParser.OrContext;
+import primerproyecto.declaracionesParser.ParamsContext;
 import primerproyecto.declaracionesParser.ProgramaContext;
 import primerproyecto.declaracionesParser.RContext;
 import primerproyecto.declaracionesParser.RelationContext;
 import primerproyecto.declaracionesParser.Sec_elifContext;
+import primerproyecto.declaracionesParser.Sec_paramsContext;
 import primerproyecto.declaracionesParser.TContext;
 import primerproyecto.declaracionesParser.TermContext;
 
 public class Visitor extends declaracionesBaseVisitor<String> {
-    private String output = "", first_label;
+    private String output = "", first_label, ret_lbl;
+    private Boolean funcall = false;//para cuando hay funcall en una asignacion
     private List<ErrorNode> errores;
     private static LinkedList<HashMap<String, Integer>> simbolos;
     private LinkedList<String> operandos;
+    private HashMap<String, String> returns;
     
     public Visitor() {
         errores = new ArrayList<ErrorNode>();
         simbolos = new LinkedList<HashMap<String, Integer>>();
         operandos = new LinkedList<String>();
+        returns = new HashMap<String, String>();
         new Generador();
         readFile();
     }
@@ -180,6 +190,101 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     }
 
     @Override
+    public String visitFuncion(FuncionContext ctx) {
+        if(ctx.prototipo() == null) {//si no es el prototipo
+            Generador g = Generador.getInstance();
+
+            ret_lbl = g.getNewLabel();
+            returns.put(ctx.fun_dec().ID().getText(), ret_lbl);
+
+            output += "\nlbl " + ret_lbl;
+            
+            if(!(ctx.fun_dec().ID().getText().equals("main")))//main no debe volver a ningun lado
+                output += "\npop ret";
+            
+            if(!(ctx.fun_dec().getText().equals("")))
+                visitFun_dec(ctx.fun_dec());
+
+            if(!(ctx.bloque().getText().equals("")))
+                visitBloque(ctx.bloque());
+
+            if(!(ctx.fun_dec().ID().getText().equals("main")))
+                output += "\njmp ret\n";
+        }
+
+        return output;
+    }
+    
+    @Override
+    public String visitFun_dec(Fun_decContext ctx) {
+        if(!(ctx.params().getText().equals("")))
+            visitParams(ctx.params());
+        
+        return output;
+    }
+
+    @Override
+    public String visitParams(ParamsContext ctx) {
+        if(!(ctx.sec_params().getText().equals("")))
+            visitSec_params(ctx.sec_params());
+    
+        output += "\npop " + ctx.ID().getText();
+
+        return output;
+    }
+
+    @Override
+    public String visitSec_params(Sec_paramsContext ctx) {
+        if(!(ctx.sec_params().getText().equals("")))
+            visitSec_params(ctx.sec_params());
+    
+        output += "\npop " + ctx.ID().getText();
+        
+        return output;
+    }
+
+    @Override
+    public String visitFun_call(Fun_callContext ctx) {
+        System.out.println("llamo func desde " + ctx.getParent().getText());
+        if(!(ctx.fc_params().getText().equals("")))
+            visitFc_params(ctx.fc_params());
+
+        output += "\npush " + ret_lbl;
+
+        output += "\njmp " + returns.get(ctx.ID().getText());
+        
+        return output;
+    }
+
+    @Override
+    public String visitFc_params(Fc_paramsContext ctx) {
+        if(ctx.ID() != null)
+            output += "\npush " + ctx.ID().getText();
+        else if(ctx.SYMBOL() != null) 
+            output += "\npush " + ctx.SYMBOL().getText().charAt(1);
+        else if(ctx.ENTERO() != null)
+            output += "\npush " + ctx.ENTERO().getText();
+        else if(!(ctx.asignacion().getText().equals("")))
+            visitAsignacion(ctx.asignacion());
+
+        if(ctx.fc_params() != null) 
+            if(!(ctx.fc_params().getText().equals("")))
+                visitFc_params(ctx.fc_params());
+        
+        return output;
+    }
+
+    @Override
+    public String visitIreturn(IreturnContext ctx) {
+        if(!(ctx.oal().getText().equals(""))) {
+            visitOal(ctx.oal());
+            output += "\npush " + operandos.pop();
+        }
+        
+        return output;
+    }
+    
+    @Override
     public String visitDeclaracion(DeclaracionContext ctx) {
         visitChildren(ctx);
 
@@ -190,8 +295,15 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitAsignacion(AsignacionContext ctx) {
         for(HashMap<String, Integer> context : simbolos) {
             if(context.containsKey(ctx.ID().getText())) {
+                funcall = false;
+                System.out.println("asignacion desde " + ctx.getParent().getText());
                 visitOal(ctx.oal());
-                output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
+                
+                
+                if(!funcall)
+                    output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
+                else 
+                    output += "\npop " + ctx.ID().getText();
             }
         }
         
@@ -359,8 +471,10 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFactor(FactorContext ctx) {
-        if(ctx.ENTERO() != null) 
+        if(ctx.ENTERO() != null) {
+            System.out.println("Visitor.visitFactor() " + ctx.ENTERO().getText());
             operandos.push(ctx.ENTERO().getText());
+        }
         else if(ctx.SYMBOL() != null) {
             char c = ctx.SYMBOL().getText().charAt(1);
             operandos.push(String.valueOf(Integer.valueOf(c)));//obtengo ascii del char y lo vuelvo a pasar a str
@@ -374,13 +488,13 @@ public class Visitor extends declaracionesBaseVisitor<String> {
                 output += " + 1";
             else
                 output += " - 1";
-
         }
         else if(ctx.oal() != null) {
             output += "oal";
         }
         else if(ctx.fun_call() != null) {
-            output += "fun_call";
+            visitFun_call(ctx.fun_call());
+            funcall = true;
         }
         
         return output;

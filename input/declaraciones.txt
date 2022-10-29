@@ -1,21 +1,12 @@
+int calcular (int x, int y) {
+	return x + y;
+}	
+	
 int main() {
-    int x = 3, y, z = x-2;
+    int x = 3, y = 2, z;
 
-    while(x<1){x =4;}
+    z = calcular(x, y);
+    //y = calcular(x, z);
 
-    return x*y;
+    return z;
 }
-
-/*
-
-	x = 0
-	lbl l0
-	t0 = x < 10
-	ifz t0 goto l1
-	x = x + 1
-	t1 = z * x
-	y = t1
-	jmp l0
-	lbl l1
-
-	*/
