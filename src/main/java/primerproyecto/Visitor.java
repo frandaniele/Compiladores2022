@@ -191,13 +191,15 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFuncion(FuncionContext ctx) {
+        Generador g = Generador.getInstance();
+        output += "\n";
         if(ctx.prototipo() == null) {//si no es el prototipo
-            Generador g = Generador.getInstance();
+            if(!returns.containsKey(ctx.fun_dec().ID().getText())) 
+                returns.put(ctx.fun_dec().ID().getText(), g.getNewLabel());
 
-            ret_lbl = g.getNewLabel();
-            returns.put(ctx.fun_dec().ID().getText(), ret_lbl);
+            ret_lbl = returns.get(ctx.fun_dec().ID().getText());
 
-            output += "\nlbl " + ret_lbl;
+            output += "\nlbl " + returns.get(ctx.fun_dec().ID().getText());
             
             if(!(ctx.fun_dec().ID().getText().equals("main")))//main no debe volver a ningun lado
                 output += "\npop ret";
@@ -211,6 +213,11 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             if(!(ctx.fun_dec().ID().getText().equals("main")))
                 output += "\njmp ret\n";
         }
+        else {
+            if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) 
+                returns.put(ctx.prototipo().fun_dec().ID().getText(), g.getNewLabel());
+        }
+        output += "\n";
 
         return output;
     }
@@ -282,7 +289,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.oal().getText().equals(""))) {
             visitOal(ctx.oal());
             
-            if(!funcall)//xq ya se hizo el push en la otra funcion
+            //if(!funcall)//xq ya se hizo el push en la otra funcion
                 output += "\npush " + operandos.pop();
         }
         
@@ -464,8 +471,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.factor().getText().equals("")))
             visitFactor(ctx.factor());
             
-        if(!funcall)
-            output += operandos.pop();
+        output += operandos.pop();
 
         operandos.push(g.getVar());
 
