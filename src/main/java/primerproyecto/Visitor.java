@@ -27,6 +27,7 @@ import primerproyecto.declaracionesParser.I_ifContext;
 import primerproyecto.declaracionesParser.IforContext;
 import primerproyecto.declaracionesParser.InstruccionContext;
 import primerproyecto.declaracionesParser.InstruccionesContext;
+import primerproyecto.declaracionesParser.IwhileContext;
 import primerproyecto.declaracionesParser.LaContext;
 import primerproyecto.declaracionesParser.LandContext;
 import primerproyecto.declaracionesParser.LoContext;
@@ -149,6 +150,26 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         
         String lbl_jmp = g.getLabel(), lbl = g.getLabel();//por for anidado
         
+        if(!(ctx.instruccion().getText().equals("")))
+            visitInstruccion(ctx.instruccion());
+
+        output += "\njmp " + lbl_jmp;
+        output += "\nlbl " + lbl;
+
+        return output;
+    }
+
+    @Override
+    public String visitIwhile(IwhileContext ctx) {
+        Generador g = Generador.getInstance();
+        output += "\nlbl " + g.getNewLabel();
+
+        visitOal(ctx.oal());
+            
+        output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+
+        String lbl_jmp = g.getLabel(), lbl = g.getLabel();//por for anidado
+
         if(!(ctx.instruccion().getText().equals("")))
             visitInstruccion(ctx.instruccion());
 
