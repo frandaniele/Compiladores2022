@@ -407,6 +407,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitArit_exp(Arit_expContext ctx) {
+        if(ctx.term().getText().equals("") && !(ctx.t().getText().equals("")))
+            operandos.push("");
         visitNoNullChilds(ctx.term(), ctx.t());
         return output;
     }
