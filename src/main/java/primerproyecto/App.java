@@ -11,8 +11,6 @@ public class App
 {
     public static void main( String[] args )
     {
-        //System.out.println( "Hello World!" );
-
         CharStream input = null;
         try {
             input = CharStreams.fromFileName("input/declaraciones.txt");
@@ -37,9 +35,8 @@ public class App
 
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial
-        //parser.programa();
-
         ParseTree tree =  parser.programa();
+       
         // Conectamos el visitor
         if(((Escucha) escucha).getError()) {
             System.out.println("Sintaxis incorrecta. FIN");
@@ -48,12 +45,5 @@ public class App
             Visitor visitor = new Visitor();
             visitor.visit(tree);
         }
-        //System.out.println(visitor);
-        //visitor.writeFile();
-        //System.out.println("error nodes " + visitor.getErrorNodes());
-        
-        // Imprime el arbol obtenido
-        //System.out.println(tree.toStringTree(parser));
-        // System.out.println(escucha);
     }
 }

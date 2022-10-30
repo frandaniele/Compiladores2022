@@ -5,14 +5,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.ErrorNode;
 
 import primerproyecto.declaracionesParser.AnContext;
 import primerproyecto.declaracionesParser.AndContext;
@@ -52,14 +50,12 @@ import primerproyecto.declaracionesParser.TermContext;
 
 public class Visitor extends declaracionesBaseVisitor<String> {
     private String output = "", first_label, ret_lbl;
-    private Boolean funcall = false;//para cuando hay funcall en una asignacion
-    private List<ErrorNode> errores;
+    private Boolean funcall = false;//para cuando un factor es funcall 
     private static LinkedList<HashMap<String, Integer>> simbolos;
     private LinkedList<String> operandos;
     private HashMap<String, String> returns;
     
     public Visitor() {
-        errores = new ArrayList<ErrorNode>();
         simbolos = new LinkedList<HashMap<String, Integer>>();
         operandos = new LinkedList<String>();
         returns = new HashMap<String, String>();
@@ -77,14 +73,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitInstrucciones(InstruccionesContext ctx) {
         visitChildren(ctx);
-
         return output;
     }
     
     @Override
     public String visitInstruccion(InstruccionContext ctx) {
         visitChildren(ctx);
-
         return output;
     }
     
@@ -96,7 +90,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
 
         visitInstruccion(ctx.instruccion());
-        
         
         if(!(ctx.sec_elif().getText().equals(""))) {
             output += "\njmp " + g.getNewLabel();
@@ -193,30 +186,28 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitFuncion(FuncionContext ctx) {
         Generador g = Generador.getInstance();
         output += "\n";
+        
         if(ctx.prototipo() == null) {//si no es el prototipo
-            if(!returns.containsKey(ctx.fun_dec().ID().getText())) 
+            if(!returns.containsKey(ctx.fun_dec().ID().getText())) //si fue prototipada no genero newlabel
                 returns.put(ctx.fun_dec().ID().getText(), g.getNewLabel());
 
-            ret_lbl = returns.get(ctx.fun_dec().ID().getText());
+            ret_lbl = returns.get(ctx.fun_dec().ID().getText());//es la etiqueta donde comienza la func en que me encuentro
 
-            output += "\nlbl " + returns.get(ctx.fun_dec().ID().getText());
+            output += "\nlbl " + ret_lbl;
             
             if(!(ctx.fun_dec().ID().getText().equals("main")))//main no debe volver a ningun lado
                 output += "\npop ret";
             
-            if(!(ctx.fun_dec().getText().equals("")))
-                visitFun_dec(ctx.fun_dec());
-
-            if(!(ctx.bloque().getText().equals("")))
-                visitBloque(ctx.bloque());
-
+            visitNoNullChilds(ctx.fun_dec(), ctx.bloque());
+           
             if(!(ctx.fun_dec().ID().getText().equals("main")))
                 output += "\njmp ret\n";
         }
-        else {
+        else {//es prototipo, genero label
             if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) 
                 returns.put(ctx.prototipo().fun_dec().ID().getText(), g.getNewLabel());
         }
+
         output += "\n";
 
         return output;
@@ -255,10 +246,16 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.fc_params().getText().equals("")))
             visitFc_params(ctx.fc_params());
 
-        output += "\npush " + ret_lbl;
-
-        output += "\njmp " + returns.get(ctx.ID().getText());
+        output += "\npush " + ret_lbl + "\njmp " + returns.get(ctx.ID().getText());
         
+        if(funcall) {
+            Generador g = Generador.getInstance();
+            g.getNewVar();
+            String var = g.getVar();
+            output += "\npop " + var;
+            operandos.push(var);
+        }
+
         return output;
     }
 
@@ -270,12 +267,14 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             output += "\npush " + ctx.SYMBOL().getText().charAt(1);
         else if(ctx.ENTERO() != null)
             output += "\npush " + ctx.ENTERO().getText();
-        else if(!(ctx.oal().getText().equals(""))){
+        else if(ctx.oal() != null){
             visitOal(ctx.oal());
             output += "\npush " + operandos.pop();
         }
-        else if(!(ctx.asignacion().getText().equals("")))
+        else if(ctx.asignacion() != null) {
             visitAsignacion(ctx.asignacion());
+            output += "\npush " + ctx.asignacion().ID().getText(); 
+        }
 
         if(ctx.fc_params() != null) 
             if(!(ctx.fc_params().getText().equals("")))
@@ -289,8 +288,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.oal().getText().equals(""))) {
             visitOal(ctx.oal());
             
-            //if(!funcall)//xq ya se hizo el push en la otra funcion
-                output += "\npush " + operandos.pop();
+            output += "\npush " + operandos.pop();
         }
         
         return output;
@@ -299,7 +297,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitDeclaracion(DeclaracionContext ctx) {
         visitChildren(ctx);
-
         return output;
     }
 
@@ -307,13 +304,9 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitAsignacion(AsignacionContext ctx) {
         for(HashMap<String, Integer> context : simbolos) {
             if(context.containsKey(ctx.ID().getText())) {
-                funcall = false;
                 visitOal(ctx.oal());
                 
-                if(!funcall)
-                    output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
-                else 
-                    output += "\npop " + ctx.ID().getText();
+                output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
                 
                 break;//porque si estaba en 2+ contextos distintos el mismo id lo repetia
             }
@@ -325,14 +318,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitOal(OalContext ctx) {
         visitNoNullChilds(ctx.lor(), ctx.lo());
-
         return output;
     }
 
     @Override
     public String visitLo(LoContext ctx) {
         visitNoNullChilds(ctx.lor(), ctx.lo());
-                
         printOp(ctx.LOR().getText());
 
         return output;          
@@ -341,14 +332,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitLor(LorContext ctx) {
         visitNoNullChilds(ctx.land(), ctx.lo());
-
         return output;
     }
   
     @Override
     public String visitLa(LaContext ctx) {
         visitNoNullChilds(ctx.land(), ctx.la());
-        
         printOp(ctx.LAND().getText());
 
         return output;
@@ -357,14 +346,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitLand(LandContext ctx) {
         visitNoNullChilds(ctx.or(), ctx.la());
-
         return output;
     }
 
     @Override
     public String visitO(OContext ctx) {
         visitNoNullChilds(ctx.or(), ctx.o());
-
         printOp(ctx.OR().getText());
 
         return output; 
@@ -373,14 +360,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitOr(OrContext ctx) {
         visitNoNullChilds(ctx.and(), ctx.o());
-
         return output;
     }
 
     @Override
     public String visitAn(AnContext ctx) {
         visitNoNullChilds(ctx.and(), ctx.an());
-
         printOp(ctx.AND().getText());
 
         return output;
@@ -389,14 +374,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitAnd(AndContext ctx) {
         visitNoNullChilds(ctx.equality(), ctx.an());
-
         return output;
     }
 
     @Override
     public String visitE(EContext ctx) {
         visitNoNullChilds(ctx.equality(), ctx.e());
-            
         printOp(ctx.EQUA().getText());
 
         return output;
@@ -405,14 +388,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitEquality(EqualityContext ctx) {
         visitNoNullChilds(ctx.relation(), ctx.e());
-
         return output;
     }
 
     @Override
     public String visitR(RContext ctx) {
         visitNoNullChilds(ctx.arit_exp(), ctx.r());
-            
         printOp(ctx.CMP().getText());
 
         return output;
@@ -421,14 +402,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitRelation(RelationContext ctx) {
         visitNoNullChilds(ctx.arit_exp(), ctx.r());
-
         return output;
     }
 
     @Override
     public String visitArit_exp(Arit_expContext ctx) {
         visitNoNullChilds(ctx.term(), ctx.t());
-
         return output;
     }
 
@@ -449,14 +428,19 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitTerm(TermContext ctx) {
         visitNoNullChilds(ctx.factor(), ctx.f());
-
         return output;
     }
 
     @Override
     public String visitF(FContext ctx) {
         Generador g = Generador.getInstance();
-        output += g.getNewVar() + operandos.pop();
+        
+        String aux = operandos.pop();
+        
+        if(!(ctx.factor().getText().equals("")))
+            visitFactor(ctx.factor());
+
+        output += g.getNewVar() + aux;
 
         if(ctx.MULT() != null) {
             output += " * ";
@@ -468,9 +452,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             output += " % ";
         }
 
-        if(!(ctx.factor().getText().equals("")))
-            visitFactor(ctx.factor());
-            
         output += operandos.pop();
 
         operandos.push(g.getVar());
@@ -483,6 +464,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFactor(FactorContext ctx) {
+        funcall = false;
+
         if(ctx.ENTERO() != null) 
             operandos.push(ctx.ENTERO().getText());
         else if(ctx.SYMBOL() != null) {
@@ -502,11 +485,11 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             operandos.push(ctx.op().ID().getText());
         }
         else if(ctx.oal() != null) {
-            output += "oal";
+            visitOal(ctx.oal());
         }
         else if(ctx.fun_call() != null) {
-            visitFun_call(ctx.fun_call());
             funcall = true;
+            visitFun_call(ctx.fun_call());
         }
         
         return output;
@@ -515,23 +498,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitOp(OpContext ctx) {
         visitChildren(ctx);   
-        
         return output;
-    }
-
-    @Override
-    public String visitErrorNode(ErrorNode node) {
-        addErrorNode(node);
-        
-        return output;
-    }
-    
-    public void addErrorNode (ErrorNode node) {
-        errores.add(node);
-    }
-    
-    public List<ErrorNode> getErrorNodes () {
-        return errores;
     }
 
     private void printOp(String operator) {
