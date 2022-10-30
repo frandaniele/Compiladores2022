@@ -171,7 +171,10 @@ public class Escucha extends declaracionesBaseListener {
                     redefinition = true;
                 }
                 else {//inicializo la funcion
-                    addArgsToFunAndTS(fun, ctx, ts, 2);//inicializacion de funcion CON prototipo
+                    if(addArgsToFunAndTS(fun, ctx, ts, 2) != fun.getArgs().size()) {//inicializacion de funcion CON prototipo
+                        System.out.println("error: conflicting types for ‘" + fun.getNombre() + "’");
+                        error = true;
+                    }
                     fun.setEstado(2);//fue inicializada
                 }
             }
@@ -284,7 +287,9 @@ public class Escucha extends declaracionesBaseListener {
     }
 
     //agrega los parametros de las funciones al objeto funcion y a la tabla de simbolos
-    private void addArgsToFunAndTS(Funcion f, Fun_decContext ctx, TablaSimbolos ts, Integer prototipo) {
+    private Integer addArgsToFunAndTS(Funcion f, Fun_decContext ctx, TablaSimbolos ts, Integer prototipo) {
+        Integer cant_args = 0;
+        
         f.setInit(true);
         if(prototipo != 0) {//0 es prototipo, es decir no agrego contexto
             agregarContexto(); //contexto de la funcion
@@ -296,9 +301,10 @@ public class Escucha extends declaracionesBaseListener {
             if(prototipo != 2) //quiere decir que estoy inicializando una funcion que fue prototipada, asi no repito args
                 f.addArg(t_variable);
 
-            if(prototipo != 0) //no agrego al contexto si es prototipo
+            if(prototipo != 0) {//no agrego al contexto si es prototipo
                 ts.addSimbolo(new Variable(((ParamsContext)ctx.getChild(3)).ID().getText(), t_variable, false, true)); //init true xq supuestamente estaria inicializado
-
+                cant_args++;
+            }
             if(ctx.getChild(3).getChild(2).getChildCount() != 0) {//hay secparams
                 Sec_paramsContext spc = (Sec_paramsContext)ctx.getChild(3).getChild(2);
                         
@@ -308,8 +314,10 @@ public class Escucha extends declaracionesBaseListener {
                         f.addArg(t_variable);
                     }
                     
-                    if(prototipo != 0)
+                    if(prototipo != 0) {
+                        cant_args++;
                         ts.addSimbolo(new Variable(spc.ID().getText(), t_variable, false, true));
+                    }
                             
                     if(spc.getChild(3) instanceof Sec_paramsContext)
                         spc = (Sec_paramsContext)spc.getChild(3);
@@ -318,6 +326,8 @@ public class Escucha extends declaracionesBaseListener {
                 }
             }
         }
+
+        return cant_args;
     }
 
     private void setVarUsed(String id_name) {
