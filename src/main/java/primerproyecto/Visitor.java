@@ -49,7 +49,7 @@ import primerproyecto.declaracionesParser.TContext;
 import primerproyecto.declaracionesParser.TermContext;
 
 public class Visitor extends declaracionesBaseVisitor<String> {
-    private String output = "", first_label, ret_lbl;
+    private String output = "", first_label, ret_lbl, op_str;
     private Boolean funcall = false;//para cuando un factor es funcall 
     private static LinkedList<HashMap<String, Integer>> simbolos;
     private LinkedList<String> operandos;
@@ -436,11 +436,24 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitF(FContext ctx) {
         Generador g = Generador.getInstance();
-        
+        Integer op = 0;
         String aux = operandos.pop();
         
-        if(!(ctx.factor().getText().equals("")))
+        if(!(ctx.factor().getText().equals(""))) {
             visitFactor(ctx.factor());
+
+            if(ctx.factor().op() != null) {// para chequear en caso de pre o post increment/decrement
+                String aux2 = ctx.factor().op().getText();
+
+                if(aux2.charAt(0) == '+' || aux2.charAt(0) == '-')//pre
+                    op = 1;
+                else //post
+                    op = 2;
+            }
+        }
+
+        if(op == 1)
+            output += op_str;
 
         output += g.getNewVar() + aux;
 
@@ -455,7 +468,10 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         }
 
         output += operandos.pop();
-
+        
+        if(op == 2)
+            output += op_str;
+            
         operandos.push(g.getVar());
 
         if(!(ctx.f().getText().equals("")))
@@ -477,12 +493,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         else if(ctx.ID() != null) 
             operandos.push(ctx.ID().getText());
         else if(ctx.op() != null) {
-            output += "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
+            op_str = "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
 
             if(ctx.op().OP().getText().equals("++"))
-                output += " + 1";
+                op_str += " + 1";
             else
-                output += " - 1";
+                op_str += " - 1";
 
             operandos.push(ctx.op().ID().getText());
         }
