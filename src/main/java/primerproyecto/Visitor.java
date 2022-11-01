@@ -189,21 +189,19 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         output += "\n";
         
         if(ctx.prototipo() == null) {//si no es el prototipo
-            if(!returns.containsKey(ctx.fun_dec().ID().getText())) //si fue prototipada no genero newlabel
-               { returns.put(ctx.fun_dec().ID().getText(), g.getNewLabel());
+            if(!returns.containsKey(ctx.fun_dec().ID().getText())) {//si fue prototipada no genero newlabel
+                returns.put(ctx.fun_dec().ID().getText(), g.getNewLabel());
+                g.getLabel();
+            }
 
-            g.getLabel();}
             ret_lbl = returns.get(ctx.fun_dec().ID().getText());//es la etiqueta donde comienza la func en que me encuentro
 
             output += "\nlbl " + ret_lbl;
             
-            if(!(ctx.fun_dec().ID().getText().equals("main")))//main no debe volver a ningun lado
-                output += "\npop ret";
-            
             visitNoNullChilds(ctx.fun_dec(), ctx.bloque());
            
             if(!(ctx.fun_dec().ID().getText().equals("main")))
-                output += "\njmp ret\n";
+                output += "\nret\n";
         }
         else {//es prototipo, genero label
             if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) 
@@ -246,13 +244,16 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFun_call(Fun_callContext ctx) {
+        Generador g = Generador.getInstance();
+
+        output += "\npush " + g.getNewLabel();
+        
         if(!(ctx.fc_params().getText().equals("")))
             visitFc_params(ctx.fc_params());
 
-        output += "\npush " + ret_lbl + "\njmp " + returns.get(ctx.ID().getText());
+        output += "\njmp " + returns.get(ctx.ID().getText()) + "\nlbl " + g.getLabel();
         
         if(funcall) {
-            Generador g = Generador.getInstance();
             g.getNewVar();
             String var = g.getVar();
             output += "\npop " + var;
