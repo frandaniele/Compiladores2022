@@ -255,6 +255,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             output += "\npop " + var;
             operandos.push(var);
         }
+        funcall = false;
 
         return output;
     }
@@ -305,12 +306,24 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         for(HashMap<String, Integer> context : simbolos) {
             if(context.containsKey(ctx.ID().getText())) {
                 visitOal(ctx.oal());
-                
+               
                 output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
                 
                 break;//porque si estaba en 2+ contextos distintos el mismo id lo repetia
             }
         }
+
+        return output;
+    }
+
+    @Override
+    public String visitOp(OpContext ctx) {
+        output += "\n" + ctx.ID().getText() + " = " + ctx.ID().getText();
+
+        if(ctx.OP().getText().equals("++"))
+            output += " + 1";
+        else
+            output += " - 1";
 
         return output;
     }
@@ -407,8 +420,9 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitArit_exp(Arit_expContext ctx) {
-        if(ctx.term().getText().equals("") && !(ctx.t().getText().equals("")))
+        if(ctx.term().getText().equals("") && !(ctx.t().getText().equals("")))//para asignacion de negativos
             operandos.push("");
+
         visitNoNullChilds(ctx.term(), ctx.t());
         return output;
     }
@@ -471,7 +485,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         
         if(op == 2)
             output += op_str;
-            
+
         operandos.push(g.getVar());
 
         if(!(ctx.f().getText().equals("")))
@@ -482,8 +496,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFactor(FactorContext ctx) {
-        funcall = false;
-
         if(ctx.ENTERO() != null) 
             operandos.push(ctx.ENTERO().getText());
         else if(ctx.SYMBOL() != null) {
@@ -510,12 +522,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             visitFun_call(ctx.fun_call());
         }
         
-        return output;
-    }
-
-    @Override
-    public String visitOp(OpContext ctx) {
-        visitChildren(ctx);   
         return output;
     }
 
