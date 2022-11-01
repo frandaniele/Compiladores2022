@@ -49,7 +49,7 @@ import primerproyecto.declaracionesParser.TContext;
 import primerproyecto.declaracionesParser.TermContext;
 
 public class Visitor extends declaracionesBaseVisitor<String> {
-    private String output = "", first_label, ret_lbl, op_str;
+    private String output = "", skip_lbl, ret_lbl, op_str;
     private Boolean funcall = false;//para cuando un factor es funcall 
     private static LinkedList<HashMap<String, Integer>> simbolos;
     private LinkedList<String> operandos;
@@ -89,19 +89,21 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
         Generador g = Generador.getInstance();
         output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+        String aux_lbl = g.getLabel();
 
         visitInstruccion(ctx.instruccion());
         
         if(!(ctx.sec_elif().getText().equals(""))) {
             output += "\njmp " + g.getNewLabel();
-            output += "\nlbl " + g.getLabel();
+            skip_lbl = g.getLabel();
 
-            first_label = g.getLabel();
+            output += "\nlbl " + aux_lbl;
 
             visitSec_elif(ctx.sec_elif());
+            return output;
         }
-        else
-            output += "\nlbl " + g.getLabel();
+
+        output += "\nlbl " + aux_lbl;
             
         return output;
     }
@@ -114,21 +116,19 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             visitOal(ctx.oal());
             
             output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+            String exit_lbl = g.getLabel();
 
             visitInstruccion(ctx.instruccion());
 
-            output += "\njmp " + first_label;
-            output += "\nlbl " + g.getLabel();
+            output += "\njmp " + skip_lbl;
+            output += "\nlbl " + exit_lbl;
 
             if(!(ctx.sec_elif().getText().equals("")))//si hay otro
                 visitSec_elif(ctx.sec_elif());
-            else
-                output += "\nlbl " + first_label;
         }
         else {//es else
             visitInstruccion(ctx.instruccion());
-            
-            output += "\nlbl " + first_label;
+            output += "\nlbl " + skip_lbl;
         }
 
         return output;
@@ -136,9 +136,9 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitIfor(IforContext ctx) {
-        if(!(ctx.asignacion().getText().equals("")))
+        if(ctx.asignacion() != null)
             visitAsignacion(ctx.asignacion());
-        else if(!(ctx.declaracion().getText().equals("")))
+        else if(ctx.declaracion() != null)
             visitDeclaracion(ctx.declaracion());
     
         Generador g = Generador.getInstance();
@@ -190,8 +190,9 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         
         if(ctx.prototipo() == null) {//si no es el prototipo
             if(!returns.containsKey(ctx.fun_dec().ID().getText())) //si fue prototipada no genero newlabel
-                returns.put(ctx.fun_dec().ID().getText(), g.getNewLabel());
+               { returns.put(ctx.fun_dec().ID().getText(), g.getNewLabel());
 
+            g.getLabel();}
             ret_lbl = returns.get(ctx.fun_dec().ID().getText());//es la etiqueta donde comienza la func en que me encuentro
 
             output += "\nlbl " + ret_lbl;
@@ -206,9 +207,10 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         }
         else {//es prototipo, genero label
             if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) 
-                returns.put(ctx.prototipo().fun_dec().ID().getText(), g.getNewLabel());
-        }
-
+                {returns.put(ctx.prototipo().fun_dec().ID().getText(), g.getNewLabel());
+                    g.getLabel();
+                }
+            }
         output += "\n";
 
         return output;
