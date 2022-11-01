@@ -46,7 +46,7 @@ public final class TablaSimbolos {
         LinkedList<String> l = new LinkedList<String>();
 
         for(Id id : lista.getLast().values()){ 
-            if(id.getUsado() == false) {
+            if(id.getUsado() == false && !(id.getNombre().equals("main"))) {
                 System.out.println("variable " + id.getNombre() + " not used");
             }
             else if(id.getInit() == false) {

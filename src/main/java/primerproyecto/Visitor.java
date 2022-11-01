@@ -54,6 +54,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     private static LinkedList<HashMap<String, Integer>> simbolos;
     private LinkedList<String> operandos;
     private HashMap<String, String> returns;
+    Integer op = 0;
     
     public Visitor() {
         simbolos = new LinkedList<HashMap<String, Integer>>();
@@ -307,8 +308,18 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             if(context.containsKey(ctx.ID().getText())) {
                 visitOal(ctx.oal());
                
+                if(op == 1) {
+                    output += op_str;
+                    op = 0;
+                }
+
                 output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
                 
+                if(op == 2) {
+                    output += op_str;
+                    op = 0;
+                }
+
                 break;//porque si estaba en 2+ contextos distintos el mismo id lo repetia
             }
         }
@@ -450,21 +461,9 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitF(FContext ctx) {
         Generador g = Generador.getInstance();
-        Integer op = 0;
         String aux = operandos.pop();
-        
-        if(!(ctx.factor().getText().equals(""))) {
+        if(!(ctx.factor().getText().equals(""))) 
             visitFactor(ctx.factor());
-
-            if(ctx.factor().op() != null) {// para chequear en caso de pre o post increment/decrement
-                String aux2 = ctx.factor().op().getText();
-
-                if(aux2.charAt(0) == '+' || aux2.charAt(0) == '-')//pre
-                    op = 1;
-                else //post
-                    op = 2;
-            }
-        }
 
         if(op == 1)
             output += op_str;
@@ -487,7 +486,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             output += op_str;
 
         operandos.push(g.getVar());
-
+        op = 0;
         if(!(ctx.f().getText().equals("")))
             visitF(ctx.f());
         
@@ -505,8 +504,15 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         else if(ctx.ID() != null) 
             operandos.push(ctx.ID().getText());
         else if(ctx.op() != null) {
-            op_str = "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
+            String aux2 = ctx.op().getText();
 
+            if(aux2.charAt(0) == '+' || aux2.charAt(0) == '-')//pre
+                op = 1;
+            else //post
+                op = 2;
+
+            op_str = "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
+    
             if(ctx.op().OP().getText().equals("++"))
                 op_str += " + 1";
             else
@@ -527,12 +533,20 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     private void printOp(String operator) {
         Generador g = Generador.getInstance();
+
+        if(op == 1)
+            output += op_str;
+
         output += g.getNewVar();
                 
         String op2 = operandos.pop();
                 
         output += operandos.pop() + " " + operator + " " + op2;
         
+        if(op == 2)
+            output += op_str;
+
+        op = 0;
         operandos.push(g.getVar());
     }
 
