@@ -49,12 +49,12 @@ import primerproyecto.declaracionesParser.TContext;
 import primerproyecto.declaracionesParser.TermContext;
 
 public class Visitor extends declaracionesBaseVisitor<String> {
-    private String output = "", skip_lbl, ret_lbl, op_str;
+    private String output = "", skip_lbl, op_str;
     private Boolean funcall = false;//para cuando un factor es funcall 
     private static LinkedList<HashMap<String, Integer>> simbolos;
     private LinkedList<String> operandos;
     private HashMap<String, String> returns;
-    Integer op = 0;
+    private Integer op = 0;
     
     public Visitor() {
         simbolos = new LinkedList<HashMap<String, Integer>>();
@@ -94,10 +94,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         visitInstruccion(ctx.instruccion());
         
         if(!(ctx.sec_elif().getText().equals(""))) {
-            output += "\njmp " + g.getNewLabel();
+            output += "\njmp " + g.getNewLabel() + "\nlbl " + aux_lbl;
             skip_lbl = g.getLabel();
-
-            output += "\nlbl " + aux_lbl;
 
             visitSec_elif(ctx.sec_elif());
             return output;
@@ -120,8 +118,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
             visitInstruccion(ctx.instruccion());
 
-            output += "\njmp " + skip_lbl;
-            output += "\nlbl " + exit_lbl;
+            output += "\njmp " + skip_lbl + "\nlbl " + exit_lbl;
 
             if(!(ctx.sec_elif().getText().equals("")))//si hay otro
                 visitSec_elif(ctx.sec_elif());
@@ -157,8 +154,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.instruccion().getText().equals("")))
             visitInstruccion(ctx.instruccion());
 
-        output += "\njmp " + lbl_jmp;
-        output += "\nlbl " + lbl;
+        output += "\njmp " + lbl_jmp + "\nlbl " + lbl;
 
         return output;
     }
@@ -177,8 +173,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.instruccion().getText().equals("")))
             visitInstruccion(ctx.instruccion());
 
-        output += "\njmp " + lbl_jmp;
-        output += "\nlbl " + lbl;
+        output += "\njmp " + lbl_jmp + "\nlbl " + lbl;
 
         return output;
     }
@@ -194,21 +189,19 @@ public class Visitor extends declaracionesBaseVisitor<String> {
                 g.getLabel();
             }
 
-            ret_lbl = returns.get(ctx.fun_dec().ID().getText());//es la etiqueta donde comienza la func en que me encuentro
-
-            output += "\nlbl " + ret_lbl;
+            output += "\nlbl " + returns.get(ctx.fun_dec().ID().getText());//es la etiqueta donde comienza la func en que me encuentro
             
             visitNoNullChilds(ctx.fun_dec(), ctx.bloque());
            
             if(!(ctx.fun_dec().ID().getText().equals("main")))
                 output += "\nret\n";
         }
-        else {//es prototipo, genero label
-            if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) 
-                {returns.put(ctx.prototipo().fun_dec().ID().getText(), g.getNewLabel());
-                    g.getLabel();
-                }
+        else //es prototipo, genero label
+            if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) {
+                returns.put(ctx.prototipo().fun_dec().ID().getText(), g.getNewLabel());
+                g.getLabel();
             }
+
         output += "\n";
 
         return output;
@@ -311,17 +304,16 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             if(context.containsKey(ctx.ID().getText())) {
                 visitOal(ctx.oal());
                
-                if(op == 1) {
+                if(op == 1) 
                     output += op_str;
-                    op = 0;
-                }
-
+                
                 output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
                 
-                if(op == 2) {
+                if(op == 2) 
                     output += op_str;
-                    op = 0;
-                }
+                
+                op = 0;
+                op_str = "";
 
                 break;//porque si estaba en 2+ contextos distintos el mismo id lo repetia
             }
@@ -465,6 +457,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitF(FContext ctx) {
         Generador g = Generador.getInstance();
         String aux = operandos.pop();
+
         if(!(ctx.factor().getText().equals(""))) 
             visitFactor(ctx.factor());
 
@@ -487,9 +480,11 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         
         if(op == 2)
             output += op_str;
+        op = 0;
+        op_str = "";
 
         operandos.push(g.getVar());
-        op = 0;
+        
         if(!(ctx.f().getText().equals("")))
             visitF(ctx.f());
         
@@ -499,7 +494,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitFactor(FactorContext ctx) {
         if(ctx.ENTERO() != null) 
-            operandos.push(ctx.ENTERO().getText());
+            operandos.push(ctx.ENTERO().getText().replaceFirst("^0+(?!$)", ""));//elimino 0s a la izquierda
         else if(ctx.SYMBOL() != null) {
             char c = ctx.SYMBOL().getText().charAt(1);
             operandos.push(String.valueOf(Integer.valueOf(c)));//obtengo ascii del char y lo vuelvo a pasar a str
@@ -514,7 +509,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             else //post
                 op = 2;
 
-            op_str = "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
+            op_str += "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
     
             if(ctx.op().OP().getText().equals("++"))
                 op_str += " + 1";
@@ -550,6 +545,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             output += op_str;
 
         op = 0;
+        op_str = "";
+
         operandos.push(g.getVar());
     }
 
@@ -592,7 +589,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         } 
         finally {
             try {
-                if (null != fichero)
+                if(null != fichero)
                     fichero.close();
             } 
             catch (Exception e2) {
