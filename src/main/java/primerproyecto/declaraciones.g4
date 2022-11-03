@@ -52,7 +52,7 @@ BLOCKCOMMENT : CA ANY CC -> skip;
 
 LINECOMMENT : BARRAS NONL -> skip;
 
-programa : { System.out.println("inicio parser\n+++++++++++++++PARSER++++++++++++++++\n"); } instrucciones { System.out.println("\n+++++++++++++++++++++++++++++++++++++\nfin parser"); } EOF ;
+programa : { System.out.println("\n+++++++++++++++PARSER++++++++++++++++\n"); } instrucciones { System.out.println("\n+++++++++++++++++++++++++++++++++++++\n"); } EOF ;
 
 instrucciones : instruccion instrucciones
               |

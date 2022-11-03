@@ -44,26 +44,27 @@ bloques_basicos : bloque_basico bloques_basicos
                 |
                 ;
 
-bloque_basico :  instrucciones ctrl_instr { System.out.println("bloque_basico ok"); }
+bloque_basico :  instrucciones ctrl_instr 
               ;
 
 instrucciones : instruccion instrucciones
               |
               ;
 		
-instruccion : operacion { System.out.println("operacion ok"); }
-            | pop { System.out.println("pop ok"); }
-            | push { System.out.println("push ok"); }
-            | label { System.out.println("label ok"); }
+instruccion : operacion 
+            | pop 
+            | push 
+            | label 
             ; 
 
-ctrl_instr : jump { System.out.println("jump ok"); }
-           | RET { System.out.println("ret ok"); }
-           | if_tac { System.out.println("if ok"); }
+ctrl_instr : jump 
+           | RET 
+           | if_tac
            ;
 
 operacion : asignacion (ID | TMP | ENTERO) OPERADOR (ID | TMP | ENTERO)
           | asignacion (ID | TMP | ENTERO)
+          | asignacion RESTA ENTERO
           ; 
 
 asignacion : (ID | TMP) EQ 
@@ -81,5 +82,5 @@ jump : JMP ETIQ
 pop : POP (ID | TMP | ETIQ)    
     ;
 
-push : PUSH (ID | TMP | ETIQ)
+push : PUSH (ID | TMP | ETIQ | ENTERO)
      ;

@@ -57,12 +57,10 @@ public class App
             
             tacParser parser2 = new tacParser(tokens2);
                     
-           // declaracionesBaseListener escucha2 = new Escucha();
-    
-            //parser.addParseListener(escucha);
-    
-            parser2.programa();
-            //ParseTree tree2 =  parser2.programa();
+            ParseTree tree2 =  parser2.programa();
+
+            VisitorTAC visitor2 = new VisitorTAC();
+            visitor2.visit(tree2);
         }
     }
 }
