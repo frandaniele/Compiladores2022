@@ -1,14 +1,8 @@
 package primerproyecto;
 
 import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 
@@ -57,17 +51,37 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     private Integer op = 0;
     
     public Visitor() {
-        simbolos = new LinkedList<HashMap<String, Integer>>();
+        FileRW file_handler = new FileRW();
+        simbolos = file_handler.readFile("simbolos");
         operandos = new LinkedList<String>();
         returns = new HashMap<String, String>();
         new Generador();
-        readFile();
     }
         
     @Override
     public String visitPrograma(ProgramaContext ctx) {
         visitChildren(ctx);
-        writeFile();
+
+        FileWriter fichero = null;
+        try {
+            fichero = new FileWriter("tac");
+        } 
+        catch (Exception e) {
+            e.printStackTrace();
+        } 
+        finally {
+            FileRW fileHandler = new FileRW();
+            fileHandler.writeFile(fichero, output);
+
+            try {
+                if(null != fichero)
+                    fichero.close();
+            } 
+            catch (Exception e2) {
+                e2.printStackTrace();
+            }
+        }
+
         return output;
     }
 
@@ -555,45 +569,5 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
         if(!(second.getText().equals("")))
             visit(second);
-    }
-
-    private static void readFile() {
-		try {
-			List<String> allLines = Files.readAllLines(Paths.get("simbolos"));
-			for (String line : allLines) {
-                simbolos.add(new HashMap<String, Integer>());
-                Scanner scan = new Scanner(line.replace("[", "").replace("]", "")).useDelimiter(",");
-                while(scan.hasNext()) {
-                    simbolos.getLast().put(scan.next().trim(), 0);
-                }
-                scan.close();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-    private void writeFile() { 
-        FileWriter fichero = null;
-        PrintWriter pw = null;
-        
-        try {
-            fichero = new FileWriter("tac");
-            pw = new PrintWriter(fichero);
-
-            pw.println(output);
-        } 
-        catch (Exception e) {
-            e.printStackTrace();
-        } 
-        finally {
-            try {
-                if(null != fichero)
-                    fichero.close();
-            } 
-            catch (Exception e2) {
-                e2.printStackTrace();
-            }
-        }
     }
 }
