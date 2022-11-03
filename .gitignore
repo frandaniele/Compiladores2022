@@ -1,6 +1,6 @@
 target
-compiladores*.java
 declaraciones*.java
+tac*.java
 *.tokens
 .antlr
 c

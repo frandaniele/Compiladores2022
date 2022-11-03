@@ -44,6 +44,25 @@ public class App
         else {
             Visitor visitor = new Visitor();
             visitor.visit(tree);
+
+            try {
+                input = CharStreams.fromFileName("tac");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+    
+            tacLexer lexer2 = new tacLexer(input);
+            
+            CommonTokenStream tokens2 = new CommonTokenStream(lexer2);
+            
+            tacParser parser2 = new tacParser(tokens2);
+                    
+           // declaracionesBaseListener escucha2 = new Escucha();
+    
+            //parser.addParseListener(escucha);
+    
+            parser2.programa();
+            //ParseTree tree2 =  parser2.programa();
         }
     }
 }

@@ -193,8 +193,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             
             visitNoNullChilds(ctx.fun_dec(), ctx.bloque());
            
-            if(!(ctx.fun_dec().ID().getText().equals("main")))
-                output += "\nret\n";
+            output += "\nret\n";
         }
         else //es prototipo, genero label
             if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) {
