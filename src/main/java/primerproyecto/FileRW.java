@@ -31,9 +31,16 @@ public class FileRW {
         return simbolos;
 	}
 
-    public void writeFile(FileWriter fichero, String output) { 
+    public void writeFile(String nombre_archivo, String output) { 
+        FileWriter fichero = null;
+
+        try {
+            fichero = new FileWriter(nombre_archivo);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+       
         PrintWriter pw = null;
-        
         try {
             pw = new PrintWriter(fichero);
 
@@ -42,5 +49,11 @@ public class FileRW {
         catch (Exception e) {
             e.printStackTrace();
         } 
+
+        try {
+            fichero.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

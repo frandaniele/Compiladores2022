@@ -1,7 +1,5 @@
 package primerproyecto;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -54,22 +52,8 @@ public final class TablaSimbolos {
         lista.removeLast();
 
         if(lista.isEmpty()) {
-            FileWriter fichero = null;
-
-            try {
-                fichero = new FileWriter("simbolos");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
             FileRW fileHandler = new FileRW();
-            fileHandler.writeFile(fichero, output);
-
-            try {
-                fichero.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            fileHandler.writeFile("simbolos", output);
         }
     }
     
