@@ -1,6 +1,5 @@
 package primerproyecto;
 
-import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -62,25 +61,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitPrograma(ProgramaContext ctx) {
         visitChildren(ctx);
 
-        FileWriter fichero = null;
-        try {
-            fichero = new FileWriter("tac");
-        } 
-        catch (Exception e) {
-            e.printStackTrace();
-        } 
-        finally {
-            FileRW fileHandler = new FileRW();
-            fileHandler.writeFile(fichero, output);
-
-            try {
-                if(null != fichero)
-                    fichero.close();
-            } 
-            catch (Exception e2) {
-                e2.printStackTrace();
-            }
-        }
+        FileRW fileHandler = new FileRW();
+        fileHandler.writeFile("tac", output);
 
         return output;
     }
@@ -102,13 +84,13 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         visitOal(ctx.oal());
 
         Generador g = Generador.getInstance();
-        output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+        output += "\n\tifz " + operandos.pop() + " goto " + g.getNewLabel();
         String aux_lbl = g.getLabel();
 
         visitInstruccion(ctx.instruccion());
         
         if(!(ctx.sec_elif().getText().equals(""))) {
-            output += "\njmp " + g.getNewLabel() + "\nlbl " + aux_lbl;
+            output += "\n\tjmp " + g.getNewLabel() + "\nlbl " + aux_lbl;
             skip_lbl = g.getLabel();
 
             visitSec_elif(ctx.sec_elif());
@@ -127,12 +109,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(ctx.IF() != null) {//es elsif
             visitOal(ctx.oal());
             
-            output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+            output += "\n\tifz " + operandos.pop() + " goto " + g.getNewLabel();
             String exit_lbl = g.getLabel();
 
             visitInstruccion(ctx.instruccion());
 
-            output += "\njmp " + skip_lbl + "\nlbl " + exit_lbl;
+            output += "\n\tjmp " + skip_lbl + "\nlbl " + exit_lbl;
 
             if(!(ctx.sec_elif().getText().equals("")))//si hay otro
                 visitSec_elif(ctx.sec_elif());
@@ -157,7 +139,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
         if(!(ctx.oal(0).getText().equals(""))) {
             visitOal(ctx.oal(0));
-            output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+            output += "\n\tifz " + operandos.pop() + " goto " + g.getNewLabel();
         }
         
         if(!(ctx.oal(1).getText().equals("")))//aca me fijo si hay ++x o x++ y depende eso, lo imprimo antes o despues del visitInstruccion
@@ -168,7 +150,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.instruccion().getText().equals("")))
             visitInstruccion(ctx.instruccion());
 
-        output += "\njmp " + lbl_jmp + "\nlbl " + lbl;
+        output += "\n\tjmp " + lbl_jmp + "\nlbl " + lbl;
 
         return output;
     }
@@ -180,14 +162,14 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
         visitOal(ctx.oal());
             
-        output += "\nifz " + operandos.pop() + " goto " + g.getNewLabel();
+        output += "\n\tifz " + operandos.pop() + " goto " + g.getNewLabel();
 
         String lbl_jmp = g.getLabel(), lbl = g.getLabel();//por for anidado
 
         if(!(ctx.instruccion().getText().equals("")))
             visitInstruccion(ctx.instruccion());
 
-        output += "\njmp " + lbl_jmp + "\nlbl " + lbl;
+        output += "\n\tjmp " + lbl_jmp + "\nlbl " + lbl;
 
         return output;
     }
@@ -207,7 +189,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             
             visitNoNullChilds(ctx.fun_dec(), ctx.bloque());
            
-            output += "\nret\n";
+            output += "\n\tret\n";
         }
         else //es prototipo, genero label
             if(!returns.containsKey(ctx.prototipo().fun_dec().ID().getText())) {
@@ -233,7 +215,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.sec_params().getText().equals("")))
             visitSec_params(ctx.sec_params());
     
-        output += "\npop " + ctx.ID().getText();
+        output += "\n\tpop " + ctx.ID().getText();
 
         return output;
     }
@@ -243,7 +225,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.sec_params().getText().equals("")))
             visitSec_params(ctx.sec_params());
     
-        output += "\npop " + ctx.ID().getText();
+        output += "\n\tpop " + ctx.ID().getText();
         
         return output;
     }
@@ -252,17 +234,17 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitFun_call(Fun_callContext ctx) {
         Generador g = Generador.getInstance();
 
-        output += "\npush " + g.getNewLabel();
+        output += "\n\tpush " + g.getNewLabel();
         
         if(!(ctx.fc_params().getText().equals("")))
             visitFc_params(ctx.fc_params());
 
-        output += "\njmp " + returns.get(ctx.ID().getText()) + "\nlbl " + g.getLabel();
+        output += "\n\tjmp " + returns.get(ctx.ID().getText()) + "\nlbl " + g.getLabel();
         
         if(funcall) {
             g.getNewVar();
             String var = g.getVar();
-            output += "\npop " + var;
+            output += "\n\tpop " + var;
             operandos.push(var);
         }
         funcall = false;
@@ -273,18 +255,18 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     @Override
     public String visitFc_params(Fc_paramsContext ctx) {
         if(ctx.ID() != null)
-            output += "\npush " + ctx.ID().getText();
+            output += "\n\tpush " + ctx.ID().getText();
         else if(ctx.SYMBOL() != null) 
-            output += "\npush " + ctx.SYMBOL().getText().charAt(1);
+            output += "\n\tpush " + ctx.SYMBOL().getText().charAt(1);
         else if(ctx.ENTERO() != null)
-            output += "\npush " + ctx.ENTERO().getText();
+            output += "\n\tpush " + ctx.ENTERO().getText();
         else if(ctx.oal() != null){
             visitOal(ctx.oal());
-            output += "\npush " + operandos.pop();
+            output += "\n\tpush " + operandos.pop();
         }
         else if(ctx.asignacion() != null) {
             visitAsignacion(ctx.asignacion());
-            output += "\npush " + ctx.asignacion().ID().getText(); 
+            output += "\n\tpush " + ctx.asignacion().ID().getText(); 
         }
 
         if(ctx.fc_params() != null) 
@@ -299,7 +281,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(!(ctx.oal().getText().equals(""))) {
             visitOal(ctx.oal());
             
-            output += "\npush " + operandos.pop();
+            output += "\n\tpush " + operandos.pop();
         }
         
         return output;
@@ -320,7 +302,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
                 if(op == 1) 
                     output += op_str;
                 
-                output += "\n" + ctx.ID().getText() + " = " + operandos.pop();
+                output += "\n\t" + ctx.ID().getText() + " = " + operandos.pop();
                 
                 if(op == 2) 
                     output += op_str;
@@ -337,7 +319,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitOp(OpContext ctx) {
-        output += "\n" + ctx.ID().getText() + " = " + ctx.ID().getText();
+        output += "\n\t" + ctx.ID().getText() + " = " + ctx.ID().getText();
 
         if(ctx.OP().getText().equals("++"))
             output += " + 1";
@@ -522,7 +504,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
             else //post
                 op = 2;
 
-            op_str += "\n" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
+            op_str += "\n\t" + ctx.op().ID().getText() + " = " + ctx.op().ID().getText();
     
             if(ctx.op().OP().getText().equals("++"))
                 op_str += " + 1";

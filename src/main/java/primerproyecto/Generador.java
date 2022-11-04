@@ -48,7 +48,7 @@ public class Generador {
     public String getNewVar() {
         vars.add("t" + numV);
 
-        return "\nt" + numV++ + " = ";
+        return "\n\tt" + numV++ + " = ";
     }
 
     public String getNewLabel() {
