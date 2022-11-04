@@ -1,6 +1,7 @@
 package primerproyecto;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import primerproyecto.tacParser.Bloque_basicoContext;
 import primerproyecto.tacParser.Bloques_basicosContext;
@@ -18,18 +19,22 @@ import primerproyecto.tacParser.PushContext;
 public class VisitorTAC extends tacBaseVisitor<String>{
     private String output = "";
     private HashMap<String, Integer> vars;
-    private Boolean skip_block = false;
+    private LinkedList<String> used;
+    private Integer num = 1;
 
     public VisitorTAC() {
         vars = new HashMap<String, Integer>();
+        used = new LinkedList<String>();
     }
 
     @Override
     public String visitPrograma(ProgramaContext ctx) {
+        output = "";
         visitChildren(ctx);
             
         FileRW fileHandler = new FileRW();
-        fileHandler.writeFile("tac_optimizado", output);
+        fileHandler.writeFile("tac_optimizado" + num, output);
+        num++;
 
         return output;
     }
@@ -42,7 +47,7 @@ public class VisitorTAC extends tacBaseVisitor<String>{
 
     @Override
     public String visitBloque_basico(Bloque_basicoContext ctx) {
-        if(!(ctx.instrucciones().getText().equals("")) && !skip_block) 
+        if(!(ctx.instrucciones().getText().equals(""))) 
             visitInstrucciones(ctx.instrucciones());
         else 
             System.out.println("este bloque se salto");
@@ -69,52 +74,26 @@ public class VisitorTAC extends tacBaseVisitor<String>{
         String variableAsignada;
         Integer value = 0;
 
-        if(ctx.asignacion().ID() != null) 
-            variableAsignada = ctx.asignacion().ID().getText();
-        else 
-            variableAsignada = ctx.asignacion().TMP().getText();
-
+        variableAsignada = ctx.asignacion().getChild(0).getText();
 
         if(ctx.OPERADOR() != null) {
             String op1 = "0", op2 = "0";
             Boolean opero = true;
 
-            if(ctx.ENTERO(0) != null) 
-                op1 = ctx.ENTERO(0).getText();
-            else if(ctx.TMP(0) != null) {
-                if(vars.containsKey(ctx.TMP(0).getText()))
-                    op1 = String.valueOf(vars.get(ctx.TMP(0).getText()));
-                else {
+            if(vars.containsKey(ctx.getChild(1).getText()))
+                op1 = String.valueOf(vars.get(ctx.getChild(1).getText()));
+            else {
+                op1 = ctx.getChild(1).getText();
+                if(ctx.ENTERO(0) == null) 
                     opero = false;
-                    op1 = ctx.TMP(0).getText();
-                }
             }
-            else if(ctx.ID(0) != null) {
-                if(vars.containsKey(ctx.ID(0).getText())) 
-                    op1 = String.valueOf(vars.get(ctx.ID(0).getText()));
-                else {
+
+            if(vars.containsKey(ctx.getChild(3).getText()))
+                op2 = String.valueOf(vars.get(ctx.getChild(3).getText()));
+            else {
+                op2 = ctx.getChild(3).getText();
+                if(ctx.ENTERO(1) == null) 
                     opero = false;
-                    op1 = ctx.ID(0).getText();
-                }
-            }
-            
-            if(ctx.ENTERO(1) != null)
-                op2 = ctx.ENTERO(1).getText();
-            else if(ctx.TMP(1) != null) {
-                if(vars.containsKey(ctx.TMP(1).getText()))
-                    op2 = String.valueOf(vars.get(ctx.TMP(1).getText()));
-                else {
-                    opero = false;
-                    op2 = ctx.TMP(1).getText();
-                }
-            }
-            else if(ctx.ID(1) != null) {
-                if(vars.containsKey(ctx.ID(1).getText())) 
-                    op2 = String.valueOf(vars.get(ctx.ID(1).getText()));
-                else {
-                    opero = false;
-                    op2 = ctx.ID(1).getText();
-                }
             }
 
             if(opero) {
@@ -126,26 +105,18 @@ public class VisitorTAC extends tacBaseVisitor<String>{
                 output += "\n\t" + ctx.getText();
         }
         else {
-            if(ctx.ID(0) != null) {
-                if(vars.containsKey(ctx.ID(0).getText()))
-                    value = vars.get(ctx.ID(0).getText());
-                else {
-                    output += "\n\t" + variableAsignada + " = " + ctx.ID(0).getText();
+            if(vars.containsKey(ctx.getChild(1).getText())) {
+                value = vars.get(ctx.getChild(1).getText());
+            }
+            else {
+                if(ctx.ENTERO() == null) {//es tmp o id
+                    used.add(ctx.getChild(1).getText());
+                    output += "\n\t" + variableAsignada + " = " + ctx.getChild(1).getText();
                     return output;
                 }
-
-            }
-            else if(ctx.TMP(0) != null) {
-                if(vars.containsKey(ctx.TMP(0).getText()))
-                    value = vars.get(ctx.TMP(0).getText());
-                else {
-                    output += "\n\t" + variableAsignada + " = " + ctx.TMP(0).getText();
-                    return output;
-                }
-            }
-            else
                 value = Integer.parseInt(ctx.ENTERO(0).getText());
-                
+            }
+                    
             vars.put(variableAsignada, value);
             output += "\n\t" + variableAsignada + " = " + value;
         }
@@ -155,10 +126,10 @@ public class VisitorTAC extends tacBaseVisitor<String>{
 
     @Override
     public String visitCtrl_instr(Ctrl_instrContext ctx) {
-        if(skip_block)
-            skip_block = false;
-        else if(ctx.RET() != null)
+        if(ctx.RET() != null) {
+            vars.clear(); //estoy en otra funcion
             output += "\n\tret\n";
+        }
         else
             visitChildren(ctx);
         
@@ -167,22 +138,20 @@ public class VisitorTAC extends tacBaseVisitor<String>{
 
     @Override
     public String visitIf_tac(If_tacContext ctx) {
-        if(ctx.TMP() != null) 
-            if(vars.containsKey(ctx.TMP().getText()))
-                if(vars.get(ctx.TMP().getText()) == 0) 
-                    skip_block = true;
+        Integer val = 0;
+        String var;
 
-        else if(ctx.ID() != null) 
-            if(vars.containsKey(ctx.ID().getText()))
-                if(vars.get(ctx.ID().getText()) == 0) 
-                    skip_block = true;
-
-        else if(ctx.ENTERO() != null) 
-            if(ctx.ENTERO().getText().equals("0"))
-                skip_block = true;
-
-        if(!skip_block)
-            output += "\n\t" + ctx.IFZ().getText() + " " + ctx.getChild(1).getText() + " " + ctx.GOTO().getText() + " " + ctx.ETIQ().getText();
+        if(vars.containsKey(ctx.getChild(1).getText())) {
+            val = vars.get(ctx.getChild(1).getText());
+            var = String.valueOf(val);
+        }
+        else {
+            var = ctx.getChild(1).getText();
+            if(ctx.ENTERO() == null)//es tmp o id
+                used.add(ctx.getChild(1).getText());
+        }
+        
+        output += "\n\t" + ctx.IFZ().getText() + " " + var + " " + ctx.GOTO().getText() + " " + ctx.ETIQ().getText();
 
         return output;
     }
@@ -196,8 +165,8 @@ public class VisitorTAC extends tacBaseVisitor<String>{
 
     @Override
     public String visitLabel(LabelContext ctx) {
-        output += "\n" + ctx.ETIQ().getText();
-        
+        output += "\n" + ctx.LBL().getText() + " " + ctx.ETIQ().getText();
+
         return output;
     }
 
