@@ -20,7 +20,7 @@ public class VisitorTAC extends tacBaseVisitor<String>{
     private String output = "";
     private HashMap<String, Integer> vars;
     private LinkedList<String> used;
-    private Integer num = 1;
+    private Integer num = 1, pasada = 0;;
 
     public VisitorTAC() {
         vars = new HashMap<String, Integer>();
@@ -31,7 +31,8 @@ public class VisitorTAC extends tacBaseVisitor<String>{
     public String visitPrograma(ProgramaContext ctx) {
         output = "";
         visitChildren(ctx);
-            
+        pasada++;
+
         FileRW fileHandler = new FileRW();
         fileHandler.writeFile("tac_optimizado" + num, output);
         num++;
@@ -76,6 +77,9 @@ public class VisitorTAC extends tacBaseVisitor<String>{
 
         variableAsignada = ctx.asignacion().getChild(0).getText();
 
+        if(pasada > 0 && !(used.contains(variableAsignada)))
+            return output;
+
         if(ctx.OPERADOR() != null) {
             String op1 = "0", op2 = "0";
             Boolean opero = true;
@@ -84,16 +88,24 @@ public class VisitorTAC extends tacBaseVisitor<String>{
                 op1 = String.valueOf(vars.get(ctx.getChild(1).getText()));
             else {
                 op1 = ctx.getChild(1).getText();
-                if(ctx.ENTERO(0) == null) 
+
+                char c = op1.charAt(0);
+                if(Character.isAlphabetic(c) || c == '_') {
+                    used.add(op1);
                     opero = false;
+                }
             }
 
             if(vars.containsKey(ctx.getChild(3).getText()))
                 op2 = String.valueOf(vars.get(ctx.getChild(3).getText()));
             else {
                 op2 = ctx.getChild(3).getText();
-                if(ctx.ENTERO(1) == null) 
+
+                char c = op2.charAt(0);
+                if(Character.isAlphabetic(c) || c == '_') {
+                    used.add(op2);
                     opero = false;
+                }
             }
 
             if(opero) {
@@ -109,12 +121,13 @@ public class VisitorTAC extends tacBaseVisitor<String>{
                 value = vars.get(ctx.getChild(1).getText());
             }
             else {
-                if(ctx.ENTERO() == null) {//es tmp o id
+                if(ctx.ENTERO(0) == null) {//es tmp o id
                     used.add(ctx.getChild(1).getText());
                     output += "\n\t" + variableAsignada + " = " + ctx.getChild(1).getText();
                     return output;
                 }
-                value = Integer.parseInt(ctx.ENTERO(0).getText());
+                    
+                value = (int) Double.parseDouble(ctx.ENTERO(0).getText());
             }
                     
             vars.put(variableAsignada, value);
@@ -181,11 +194,14 @@ public class VisitorTAC extends tacBaseVisitor<String>{
     public String visitPush(PushContext ctx) {
         output += "\n\t" + ctx.PUSH().getText() + " " + ctx.getChild(1).getText();
 
+        if(ctx.ENTERO() == null)
+            used.add(ctx.getChild(1).getText());
+
         return output;
     }
 
     private Integer operate(String operador, String op1, String op2) {
-        Integer a = Integer.parseInt(op1), b = Integer.parseInt(op2);
+        Integer a = (int)Double.parseDouble(op1), b = (int)Double.parseDouble(op2);
 
         switch (operador) {
             case "+":
