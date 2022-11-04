@@ -64,13 +64,12 @@ ctrl_instr : jump
 
 operacion : asignacion (ID | TMP | ENTERO) OPERADOR (ID | TMP | ENTERO)
           | asignacion (ID | TMP | ENTERO)
-          | asignacion RESTA ENTERO
           ; 
 
 asignacion : (ID | TMP) EQ 
            ;
 
-if_tac : IFZ TMP GOTO ETIQ
+if_tac : IFZ (ID | TMP | ENTERO) GOTO ETIQ
        ;
 
 label : LBL ETIQ
