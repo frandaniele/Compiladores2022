@@ -1,6 +1,7 @@
 package primerproyecto;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 import primerproyecto.tacParser.Bloque_basicoContext;
@@ -18,20 +19,24 @@ import primerproyecto.tacParser.PushContext;
 
 public class VisitorTAC extends tacBaseVisitor<String>{
     private String output = "";
-    private HashMap<String, Integer> vars;
-    private LinkedList<String> used;
+    private LinkedList<HashMap<String, Integer>> vars;
+    private LinkedList<HashSet<String>> used;
     private Integer num = 1, pasada = 0;;
 
     public VisitorTAC() {
-        vars = new HashMap<String, Integer>();
-        used = new LinkedList<String>();
+        vars = new LinkedList<HashMap<String, Integer>>();
+        used = new LinkedList<HashSet<String>>();
+        used.add(new HashSet<String>());
     }
 
     @Override
     public String visitPrograma(ProgramaContext ctx) {
         output = "";
         visitChildren(ctx);
+        System.out.println(used.getLast());
+
         pasada++;
+        used.add(new HashSet<String>());
 
         FileRW fileHandler = new FileRW();
         fileHandler.writeFile("tac_optimizado" + num, output);
@@ -48,8 +53,10 @@ public class VisitorTAC extends tacBaseVisitor<String>{
 
     @Override
     public String visitBloque_basico(Bloque_basicoContext ctx) {
-        if(!(ctx.instrucciones().getText().equals(""))) 
+        if(!(ctx.instrucciones().getText().equals(""))) {
+            vars.add(new HashMap<String, Integer>());//por cada bloque tengo las variables
             visitInstrucciones(ctx.instrucciones());
+        }
         else 
             System.out.println("este bloque se salto");
             
@@ -76,53 +83,57 @@ public class VisitorTAC extends tacBaseVisitor<String>{
         Integer value = 0;
 
         variableAsignada = ctx.asignacion().getChild(0).getText();
-
-        if(pasada > 0 && !(used.contains(variableAsignada)))
+       // System.out.println(used);
+        if(pasada > 0 && !(used.get(pasada-1).contains(variableAsignada)))
             return output;
 
         if(ctx.OPERADOR() != null) {
             String op1 = "0", op2 = "0";
             Boolean opero = true;
 
-            if(vars.containsKey(ctx.getChild(1).getText()))
-                op1 = String.valueOf(vars.get(ctx.getChild(1).getText()));
+            if(vars.getLast().containsKey(ctx.getChild(1).getText())) {
+                op1 = String.valueOf(vars.getLast().get(ctx.getChild(1).getText()));
+                used.getLast().add(ctx.getChild(1).getText());
+            }
             else {
                 op1 = ctx.getChild(1).getText();
 
                 char c = op1.charAt(0);
                 if(Character.isAlphabetic(c) || c == '_') {
-                    used.add(op1);
+                    used.getLast().add(op1);
                     opero = false;
                 }
             }
 
-            if(vars.containsKey(ctx.getChild(3).getText()))
-                op2 = String.valueOf(vars.get(ctx.getChild(3).getText()));
+            if(vars.getLast().containsKey(ctx.getChild(3).getText())) {
+                op2 = String.valueOf(vars.getLast().get(ctx.getChild(3).getText()));
+                used.getLast().add(ctx.getChild(3).getText());
+            }
             else {
                 op2 = ctx.getChild(3).getText();
 
                 char c = op2.charAt(0);
                 if(Character.isAlphabetic(c) || c == '_') {
-                    used.add(op2);
+                    used.getLast().add(op2);
                     opero = false;
                 }
             }
 
             if(opero) {
                 value = operate(ctx.OPERADOR().getText(), op1, op2);
-                vars.put(variableAsignada, value);
+                vars.getLast().put(variableAsignada, value);
                 output += "\n\t" + variableAsignada + " = " + value;
             }
             else 
                 output += "\n\t" + ctx.getText();
         }
         else {
-            if(vars.containsKey(ctx.getChild(1).getText())) {
-                value = vars.get(ctx.getChild(1).getText());
+            if(vars.getLast().containsKey(ctx.getChild(1).getText())) {
+                value = vars.getLast().get(ctx.getChild(1).getText());
             }
             else {
                 if(ctx.ENTERO(0) == null) {//es tmp o id
-                    used.add(ctx.getChild(1).getText());
+                    used.getLast().add(ctx.getChild(1).getText());
                     output += "\n\t" + variableAsignada + " = " + ctx.getChild(1).getText();
                     return output;
                 }
@@ -130,7 +141,7 @@ public class VisitorTAC extends tacBaseVisitor<String>{
                 value = (int) Double.parseDouble(ctx.ENTERO(0).getText());
             }
                     
-            vars.put(variableAsignada, value);
+            vars.getLast().put(variableAsignada, value);
             output += "\n\t" + variableAsignada + " = " + value;
         }
 
@@ -154,14 +165,14 @@ public class VisitorTAC extends tacBaseVisitor<String>{
         Integer val = 0;
         String var;
 
-        if(vars.containsKey(ctx.getChild(1).getText())) {
-            val = vars.get(ctx.getChild(1).getText());
+        if(vars.getLast().containsKey(ctx.getChild(1).getText())) {
+            val = vars.getLast().get(ctx.getChild(1).getText());
             var = String.valueOf(val);
         }
         else {
             var = ctx.getChild(1).getText();
             if(ctx.ENTERO() == null)//es tmp o id
-                used.add(ctx.getChild(1).getText());
+                used.getLast().add(ctx.getChild(1).getText());
         }
         
         output += "\n\t" + ctx.IFZ().getText() + " " + var + " " + ctx.GOTO().getText() + " " + ctx.ETIQ().getText();
@@ -195,7 +206,7 @@ public class VisitorTAC extends tacBaseVisitor<String>{
         output += "\n\t" + ctx.PUSH().getText() + " " + ctx.getChild(1).getText();
 
         if(ctx.ENTERO() == null)
-            used.add(ctx.getChild(1).getText());
+            used.getLast().add(ctx.getChild(1).getText());
 
         return output;
     }

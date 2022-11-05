@@ -75,7 +75,21 @@ public class App
                     
             tree2 =  parser2.programa();
 
-           // visitor2 = new VisitorTAC();
+            visitor2.visit(tree2);
+
+            try {
+                input = CharStreams.fromFileName("tac_optimizado2");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            lexer2.setInputStream(input);
+            
+            tokens2 = new CommonTokenStream(lexer2);
+            
+            parser2.setTokenStream(tokens2); 
+                    
+            tree2 =  parser2.programa();
+
             visitor2.visit(tree2);
         }
     }
