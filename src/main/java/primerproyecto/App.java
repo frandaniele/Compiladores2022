@@ -44,53 +44,12 @@ public class App
         else {
             Visitor visitor = new Visitor();
             visitor.visit(tree);
-
-            try {
-                input = CharStreams.fromFileName("tac");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
     
-            tacLexer lexer2 = new tacLexer(input);
-            
-            CommonTokenStream tokens2 = new CommonTokenStream(lexer2);
-            
-            tacParser parser2 = new tacParser(tokens2);
-                    
-            ParseTree tree2 =  parser2.programa();
+            Optimizador opt = new Optimizador();
 
-            VisitorTAC visitor2 = new VisitorTAC();
-            visitor2.visit(tree2);
+            String code_opt = opt.Optimizar("tac");
 
-            try {
-                input = CharStreams.fromFileName("tac_optimizado1");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            lexer2.setInputStream(input);
-            
-            tokens2 = new CommonTokenStream(lexer2);
-            
-            parser2.setTokenStream(tokens2); 
-                    
-            tree2 =  parser2.programa();
-
-            visitor2.visit(tree2);
-
-            try {
-                input = CharStreams.fromFileName("tac_optimizado2");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            lexer2.setInputStream(input);
-            
-            tokens2 = new CommonTokenStream(lexer2);
-            
-            parser2.setTokenStream(tokens2); 
-                    
-            tree2 =  parser2.programa();
-
-            visitor2.visit(tree2);
+            code_opt = opt.Optimizar(code_opt);//para hacer mas pasadas
         }
     }
 }
