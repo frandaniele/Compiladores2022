@@ -47,7 +47,9 @@ public class App
     
             Optimizador opt = new Optimizador();
 
-            opt.Optimizar("tac");
+            String code_opt = opt.Optimizar("tac");
+
+            code_opt = opt.Optimizar(code_opt);//para hacer mas pasadas
         }
     }
 }

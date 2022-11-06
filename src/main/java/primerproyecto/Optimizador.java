@@ -10,16 +10,20 @@ import java.util.List;
 
 public class Optimizador {
     private LinkedList<LinkedList<String>> blocks;
+    private LinkedList<LinkedList<String>> used;
     private List<String> code;
     private String output;
+    private Integer pasada;
 
     public Optimizador() {
         blocks = new LinkedList<LinkedList<String>>();
+        used = new LinkedList<LinkedList<String>>();
         output = "";
-        code = null;        
+        code = null;    
+        pasada = 1;    
     }
      
-    public void Optimizar(String path) {
+    public String Optimizar(String path) {
         code = getCode(path);
 
         blocks = getBlocks(code);
@@ -27,7 +31,9 @@ public class Optimizador {
         output = getOutput(blocks);
 
         FileRW file_handler = new FileRW();
-        file_handler.writeFile("tac_optimizado", output);
+        file_handler.writeFile("tac_optimizado" + pasada, output);
+
+        return "tac_optimizado" + pasada++;
     }
 
     /**
@@ -94,8 +100,9 @@ public class Optimizador {
      * @return string con el codigo optimizado
      */
     private String getOutput(LinkedList<LinkedList<String>> blocks) {
-        LinkedList<String> used = new LinkedList<String>();
         String output = "";
+
+        used.add(new LinkedList<String>());
 
         for(LinkedList<String> b : blocks){
             HashMap<String, Integer> vars = new HashMap<String, Integer>();
@@ -104,6 +111,10 @@ public class Optimizador {
                 if(l.contains("=")) { //es una operacion
                     String[] operacion = l.split("=",2);
                     String variableAsignada = operacion[0].trim();
+                    
+                    if(pasada > 1 && !used.get(pasada - 2).contains(variableAsignada))
+                        continue;                    
+
                     String[] ops = operacion[1].split("[|][|]|[&][&]|[><=][=]|[-+/%|&<>*]");
                     String op1 = ops[0].trim();
                     String operator = getOperator(l);
@@ -118,7 +129,7 @@ public class Optimizador {
                             op1 = String.valueOf(vars.get(op1));
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op1.charAt(0))) {//var que no conozco valor
-                                used.add(op1);
+                                used.getLast().add(op1);
                                 opero = false;
                             }
                         }
@@ -127,7 +138,7 @@ public class Optimizador {
                             op2 = String.valueOf(vars.get(op2));
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op2.charAt(0))) {//var que no conozco valor
-                                used.add(op2);
+                                used.getLast().add(op2);
                                 opero = false;
                             }
                         }
@@ -138,7 +149,7 @@ public class Optimizador {
                             output += "\n\t" + variableAsignada + " = " + value;
                         }
                         else //no pude obtener un resultado
-                            output += "\n" + l;
+                            output += "\n\t" + variableAsignada + " = " + op1 + " " + operator + " " + op2;
                     }
                     else {//var = x
                         if(vars.containsKey(op1)) {//es var que conozco el valor
@@ -148,7 +159,7 @@ public class Optimizador {
                         }
                         else {
                             if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
-                                used.add(op1);
+                                used.getLast().add(op1);
                                 output += "\n" + l;
                             }
                             else {//es un numero
@@ -162,7 +173,7 @@ public class Optimizador {
                 else if(l.contains("push")) {
                     String var = l.substring(l.trim().indexOf(" ") + 1).trim();
                     if(isTmpOrId(var.charAt(0)))
-                        used.add(var);
+                        used.getLast().add(var);
 
                     output += "\n" + l;
                 }
@@ -170,7 +181,7 @@ public class Optimizador {
                     output += "\n" + l;
                 }
                 else if(l.contains("ret")) {
-                    output += "\n" + l;
+                    output += "\n" + l + "\n";
                 }
                 else if(l.contains("ifz")) {
                     Integer val = 0;
@@ -185,7 +196,7 @@ public class Optimizador {
                     }
                     else {//es un num o no conozco el valor
                         if(isTmpOrId(var.charAt(0)))//es tmp o id
-                            used.add(var);
+                            used.getLast().add(var);
                         
                         output += "\n" + l;
                     }
