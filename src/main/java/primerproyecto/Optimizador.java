@@ -69,14 +69,14 @@ public class Optimizador {
         LinkedList<LinkedList<String>> blocks = new LinkedList<LinkedList<String>>();
         HashSet<String> objectives = new HashSet<String>();
         
-        for (String line : code) {
+        for (String line : code) {//los objetivos de un salto son lideres de bloques
             if(line.startsWith("\tifz ") || line.startsWith("\tjmp l"))
                 objectives.add("lbl " + line.substring(line.indexOf('l')));
         }
         
         LinkedList<String> block = new LinkedList<String>();
         for (String line : code) {
-            if(objectives.contains(line) && !block.isEmpty()) {
+            if(objectives.contains(line) && !block.isEmpty()) {//si estoy por arrancar un nuevo bloque agrego y reinicio
                 blocks.add(block);
                 block = new LinkedList<String>();
             }
@@ -85,7 +85,7 @@ public class Optimizador {
                 block.add(line);
 
             if(line.startsWith("\tifz ") || line.startsWith("\tjmp l") || line.startsWith("\tret")) {
-                blocks.add(block);
+                blocks.add(block);//si estoy por arrancar un nuevo bloque agrego y reinicio
                 block = new LinkedList<String>();
             }            
         }
@@ -102,7 +102,7 @@ public class Optimizador {
     private String getOutput(LinkedList<LinkedList<String>> blocks) {
         String output = "";
 
-        used.add(new LinkedList<String>());
+        used.add(new LinkedList<String>());//las usadas en cada pasada
 
         for(LinkedList<String> b : blocks){
             HashMap<String, Integer> vars = new HashMap<String, Integer>();
@@ -113,8 +113,6 @@ public class Optimizador {
                 if(l.contains("=")) { //es una operacion
                     String[] operacion = l.split("=",2);
                     String variableAsignada = operacion[0].trim();
-                    if(l.contains("t23 =")) 
-                        noElimine = true;
 
                     if(pasada > 1 && !used.get(pasada - 2).contains(variableAsignada))
                         continue;                    
@@ -133,7 +131,7 @@ public class Optimizador {
                             op1 = String.valueOf(vars.get(op1));
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op1.charAt(0))) {//var que no conozco valor
-                                if(asignaciones.containsKey(op1)) {
+                                if(asignaciones.containsKey(op1)) {//escribo la ultima asignacion conocida
                                     output += asignaciones.get(op1);
                                     asignaciones.remove(op1);
                                 }
@@ -146,7 +144,7 @@ public class Optimizador {
                             op2 = String.valueOf(vars.get(op2));
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op2.charAt(0))) {//var que no conozco valor
-                                if(asignaciones.containsKey(op2)) {
+                                if(asignaciones.containsKey(op2)) {//escribo la ultima asignacion conocida
                                     output += asignaciones.get(op2);
                                     asignaciones.remove(op2);
                                 }
@@ -171,7 +169,7 @@ public class Optimizador {
                         }
                         else {
                             if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
-                                if(asignaciones.containsKey(op1)) {
+                                if(asignaciones.containsKey(op1)) {//reemplazo t = a op b -> x = t por x = a op b
                                     String tmp = asignaciones.get(op1).trim();
                                     output += "\n\t" + variableAsignada + " = " + tmp.substring(tmp.indexOf("=") + 1).trim();
                                     asignaciones.remove(op1);
@@ -204,29 +202,29 @@ public class Optimizador {
                 else if(l.contains("pop")) {
                     output += "\n" + l;
                 }
-                else if(l.contains("ret")) {
-                    for(String k : asignaciones.keySet()) {
+                else if(l.contains("lbl") || l.contains("jmp") || l.contains("ret")) {
+                    for(String k : asignaciones.keySet()) 
                         if(asignaciones.get(k) != null) {
                             noElimine = false;
                             output += asignaciones.get(k);
                             asignaciones.put(k, null);
                         }
-                    }
                     
-                    output += "\n" + l + "\n";
+                    output += "\n" + l;
+
+                    if(l.contains("ret"))
+                        output += "\n";
                 }
                 else if(l.contains("ifz")) {
                     Integer val = 0;
                     String var = l.substring(4, l.indexOf("goto")).trim();
 
-                    for(String k : asignaciones.keySet()) {
+                    for(String k : asignaciones.keySet()) 
                         if(asignaciones.get(k) != null) {
-                            System.out.println(b + asignaciones.get(k) + "\n------\n");
                             noElimine = false;
                             output += asignaciones.get(k);
                             asignaciones.put(k, null);
                         }
-                    }
 
                     if(vars.containsKey(var)) {//si existe el valor reemplazo la variable
                         val = vars.get(var);
@@ -237,7 +235,7 @@ public class Optimizador {
                     }
                     else {//es un num o no conozco el valor
                         if(isTmpOrId(var.charAt(0))) {//es tmp o id
-                            if(asignaciones.containsKey(var)) {
+                            if(asignaciones.containsKey(var)) {//imprimo el ultimo valor conocido de la variable
                                 if(asignaciones.get(var) != null)    
                                     output += asignaciones.get(var);
                                 asignaciones.remove(var);
@@ -248,38 +246,15 @@ public class Optimizador {
                         output += "\n" + l;
                     }
 
-                }
-                else if(l.contains("lbl")) {
-                    for(String k : asignaciones.keySet()) {
-                        if(asignaciones.get(k) != null) {
-                            noElimine = false;
-                            output += asignaciones.get(k);
-                            asignaciones.put(k, null);
-                        }
-                    }
-                    
-                    output += "\n" + l;
-                }
-                else if(l.contains("jmp")) {
-                    for(String k : asignaciones.keySet()) {
-                        if(asignaciones.get(k) != null) {
-                            noElimine = false;
-                            output += asignaciones.get(k);
-                            asignaciones.put(k, null);
-                        }
-                    }
-                    
-                    output += "\n" + l;
-                }
+                }                
             }
 
             if(noElimine) {
-                for(String k : asignaciones.keySet()) {
+                for(String k : asignaciones.keySet()) 
                     if(asignaciones.get(k) != null) {
                         output += asignaciones.get(k);
                         asignaciones.put(k, null);
                     }
-                }
             }
         }
 
@@ -292,46 +267,32 @@ public class Optimizador {
         switch (operador) {
             case "+":
                 return a + b;
-        
             case "-":
                 return a - b;
-
             case "*":
                 return a * b;
-        
             case "/":
                 return a / b;
-
             case "%":
                 return a % b;
-        
             case "|":
                 return a | b;
-
             case "&":
                 return a & b;
-            
             case "||":
                 return boolToInt(intToBool(a) || intToBool(b));
-
             case "&&":
                 return boolToInt(intToBool(a) && intToBool(b));
-        
             case "<":
                 return boolToInt(a < b);
-
             case ">":
                 return boolToInt(a > b);
-        
             case ">=":
                 return boolToInt(a >= b);
-
             case "<=":
                 return boolToInt(a <= b);
-        
             case "==":
                 return boolToInt(a == b);
-        
             default:
                 return 0;
         }
