@@ -106,12 +106,16 @@ public class Optimizador {
 
         for(LinkedList<String> b : blocks){
             HashMap<String, Integer> vars = new HashMap<String, Integer>();
-
+            HashMap<String, String> asignaciones = new HashMap<String, String>();
+            Boolean noElimine = true;
+            
             for(String l : b) {
                 if(l.contains("=")) { //es una operacion
                     String[] operacion = l.split("=",2);
                     String variableAsignada = operacion[0].trim();
-                    
+                    if(l.contains("t23 =")) 
+                        noElimine = true;
+
                     if(pasada > 1 && !used.get(pasada - 2).contains(variableAsignada))
                         continue;                    
 
@@ -129,15 +133,23 @@ public class Optimizador {
                             op1 = String.valueOf(vars.get(op1));
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op1.charAt(0))) {//var que no conozco valor
+                                if(asignaciones.containsKey(op1)) {
+                                    output += asignaciones.get(op1);
+                                    asignaciones.remove(op1);
+                                }
                                 used.getLast().add(op1);
                                 opero = false;
                             }
                         }
-
+                        
                         if(vars.containsKey(op2))//es una var que conozco su valor
                             op2 = String.valueOf(vars.get(op2));
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op2.charAt(0))) {//var que no conozco valor
+                                if(asignaciones.containsKey(op2)) {
+                                    output += asignaciones.get(op2);
+                                    asignaciones.remove(op2);
+                                }
                                 used.getLast().add(op2);
                                 opero = false;
                             }
@@ -146,34 +158,46 @@ public class Optimizador {
                         if(opero) {//tengo disponibles los valores
                             value = operate(operator, op1, op2);
                             vars.put(variableAsignada, value);
-                            output += "\n\t" + variableAsignada + " = " + value;
+                            asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + value);
                         }
                         else //no pude obtener un resultado
-                            output += "\n\t" + variableAsignada + " = " + op1 + " " + operator + " " + op2;
+                            asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + op1 + " " + operator + " " + op2);
                     }
                     else {//var = x
                         if(vars.containsKey(op1)) {//es var que conozco el valor
                             value = vars.get(op1);
                             vars.put(variableAsignada, value);
-                            output += "\n\t" + variableAsignada + " = " + value;
+                            asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
                         }
                         else {
                             if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
-                                used.getLast().add(op1);
-                                output += "\n" + l;
+                                if(asignaciones.containsKey(op1)) {
+                                    String tmp = asignaciones.get(op1).trim();
+                                    output += "\n\t" + variableAsignada + " = " + tmp.substring(tmp.indexOf("=") + 1).trim();
+                                    asignaciones.remove(op1);
+                                }
+                                else {
+                                    used.getLast().add(op1);
+                                    output += "\n" + l;
+                                }
                             }
                             else {//es un numero
                                 value = (int) Double.parseDouble(op1);
                                 vars.put(variableAsignada, value);
-                                output += "\n\t" + variableAsignada + " = " + value;
+                                asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
                             }                                   
                         }
                     }
                 }
                 else if(l.contains("push")) {
                     String var = l.substring(l.trim().indexOf(" ") + 1).trim();
-                    if(isTmpOrId(var.charAt(0)))
+                    if(isTmpOrId(var.charAt(0))) {
+                        if(asignaciones.containsKey(var)) {
+                            output += asignaciones.get(var);
+                            asignaciones.remove(var);
+                        }
                         used.getLast().add(var);
+                    }
 
                     output += "\n" + l;
                 }
@@ -181,12 +205,29 @@ public class Optimizador {
                     output += "\n" + l;
                 }
                 else if(l.contains("ret")) {
+                    for(String k : asignaciones.keySet()) {
+                        if(asignaciones.get(k) != null) {
+                            noElimine = false;
+                            output += asignaciones.get(k);
+                            asignaciones.put(k, null);
+                        }
+                    }
+                    
                     output += "\n" + l + "\n";
                 }
                 else if(l.contains("ifz")) {
                     Integer val = 0;
                     String var = l.substring(4, l.indexOf("goto")).trim();
-                   
+
+                    for(String k : asignaciones.keySet()) {
+                        if(asignaciones.get(k) != null) {
+                            System.out.println(b + asignaciones.get(k) + "\n------\n");
+                            noElimine = false;
+                            output += asignaciones.get(k);
+                            asignaciones.put(k, null);
+                        }
+                    }
+
                     if(vars.containsKey(var)) {//si existe el valor reemplazo la variable
                         val = vars.get(var);
                         var = String.valueOf(val);
@@ -195,18 +236,49 @@ public class Optimizador {
                         output += "\n\tifz " + var + " goto " + label;
                     }
                     else {//es un num o no conozco el valor
-                        if(isTmpOrId(var.charAt(0)))//es tmp o id
+                        if(isTmpOrId(var.charAt(0))) {//es tmp o id
+                            if(asignaciones.containsKey(var)) {
+                                if(asignaciones.get(var) != null)    
+                                    output += asignaciones.get(var);
+                                asignaciones.remove(var);
+                            }
                             used.getLast().add(var);
+                        }                       
                         
                         output += "\n" + l;
                     }
 
                 }
                 else if(l.contains("lbl")) {
+                    for(String k : asignaciones.keySet()) {
+                        if(asignaciones.get(k) != null) {
+                            noElimine = false;
+                            output += asignaciones.get(k);
+                            asignaciones.put(k, null);
+                        }
+                    }
+                    
                     output += "\n" + l;
                 }
                 else if(l.contains("jmp")) {
+                    for(String k : asignaciones.keySet()) {
+                        if(asignaciones.get(k) != null) {
+                            noElimine = false;
+                            output += asignaciones.get(k);
+                            asignaciones.put(k, null);
+                        }
+                    }
+                    
                     output += "\n" + l;
+                }
+            }
+
+            if(noElimine) {
+                for(String k : asignaciones.keySet()) {
+                    if(asignaciones.get(k) != null) {
+                        output += asignaciones.get(k);
+                        asignaciones.put(k, null);
+                    }
                 }
             }
         }
