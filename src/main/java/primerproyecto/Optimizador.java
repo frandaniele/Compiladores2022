@@ -124,7 +124,7 @@ public class Optimizador {
                     Integer value = 0;
 
                     if(operator != null) {//var = x op y
-                        String op2 = ops[1].trim();
+                        String op2 = ops[1].trim();                       
                         Boolean opero = true;
 
                         if(vars.containsKey(op1))//es una var que conozco su valor
@@ -158,10 +158,37 @@ public class Optimizador {
                             vars.put(variableAsignada, value);
                             asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + value);
                         }
-                        else //no pude obtener un resultado
-                            asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + op1 + " " + operator + " " + op2);
+                        else {//no pude obtener un resultado
+                            if(operacionNeutra(operator, op1, op2)) {
+                                String op = op2;
+
+                                if(op2.equals("1") && (operator.equals("*") || operator.equals("/")))
+                                    op = op1;
+                                else if(op2.equals("0") && (operator.equals("+") || operator.equals("-")))
+                                    op = op1;
+
+                                asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + op);
+                            }
+                            else {
+                                Boolean asigne = false;
+                                for(String k : asignaciones.keySet()) {
+                                    if(asignaciones.get(k).contains(" = " + op1 + " " + operator + " " + op2)) {//caso a = x + z y b = x + z -> b = a
+                                        output += asignaciones.get(k);
+                                        asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + k);
+                                        asignaciones.remove(k);
+                                        asigne = true;
+                                        break;
+                                    }
+                                }                            
+                                if(!asigne)
+                                    asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + op1 + " " + operator + " " + op2);
+                            }
+                        }
                     }
                     else {//var = x
+                        if(variableAsignada.equals(op1))
+                            continue;
+
                         if(vars.containsKey(op1)) {//es var que conozco el valor
                             value = vars.get(op1);
                             vars.put(variableAsignada, value);
@@ -344,5 +371,21 @@ public class Optimizador {
             return "&&";
 
         return null;
+    }
+    
+    private static Boolean operacionNeutra(String operador, String x, String y) {
+        if(operador.equals("*") && (x.equals("1") || y.equals("1")))
+            return true;
+
+        if(operador.equals("+") && (x.equals("0") || y.equals("0")))
+            return true;
+
+        if(operador.equals("/") && y.equals("1"))
+            return true;
+
+        if(operador.equals("-") && y.equals("0"))
+            return true;
+
+        return false;
     }
 }
