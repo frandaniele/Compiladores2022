@@ -123,7 +123,27 @@ public class Optimizador {
 
                     Integer value = 0;
 
-                    if(operator != null) {//var = x op y
+                    if(op1.length() == 0) {//caso negativos
+                        op1 = ops[1].trim();
+
+                        if(vars.containsKey(op1)) {//es var que conozco el valor
+                            value = -vars.get(op1);
+                            vars.put(variableAsignada, value);
+                            asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
+                        }
+                        else {
+                            if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
+                                used.getLast().add(op1);
+                                output += "\n\t" + variableAsignada + " = -" + op1;
+                            }
+                            else {//es un numero
+                                value = -(int) Double.parseDouble(op1);
+                                vars.put(variableAsignada, value);
+                                asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
+                            }                                   
+                        }
+                    }
+                    else if(operator != null) {//var = x op y
                         String op2 = ops[1].trim();                       
                         Boolean opero = true;
 
@@ -159,7 +179,7 @@ public class Optimizador {
                             asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + value);
                         }
                         else {//no pude obtener un resultado
-                            if(operacionNeutra(operator, op1, op2)) {
+                            if(operacionNeutra(operator, op1, op2)) {//resuelvo 1*x, 0+x etc
                                 String op = op2;
 
                                 if(op2.equals("1") && (operator.equals("*") || operator.equals("/")))
@@ -180,13 +200,15 @@ public class Optimizador {
                                         break;
                                     }
                                 }                            
-                                if(!asigne)
-                                    asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + op1 + " " + operator + " " + op2);
+                                if(!asigne){//cuando no pude operar por no tener disponible el valor de algun operando
+                                    String aux = operoConVars(operator, op1, op2);
+                                    asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + aux);
+                                }
                             }
                         }
                     }
                     else {//var = x
-                        if(variableAsignada.equals(op1))
+                        if(variableAsignada.equals(op1))//x = x
                             continue;
 
                         if(vars.containsKey(op1)) {//es var que conozco el valor
@@ -201,7 +223,7 @@ public class Optimizador {
                                     output += "\n\t" + variableAsignada + " = " + tmp.substring(tmp.indexOf("=") + 1).trim();
                                     asignaciones.remove(op1);
                                 }
-                                else {
+                                else {//x = y -> marco y usada
                                     used.getLast().add(op1);
                                     output += "\n" + l;
                                 }
@@ -387,5 +409,34 @@ public class Optimizador {
             return true;
 
         return false;
+    }
+
+    private static String operoConVars(String operador, String x, String y) {
+        String ret;
+
+        if(x.equals(y) && (operador.equals("/") || operador.equals("-"))) {
+            if(operador.equals("/"))
+                ret = "1";
+            else
+                ret = "0";
+        }
+        else if((x.equals("2") || y.equals("2")) && operador.equals("*")) {
+            if(x.equals("2"))
+                ret = y + " + " + y;
+            else
+                ret = x + " + " + x;
+        }
+        else if(x.equals("0") && (operador.equals("/") || operador.equals("-"))) {
+            if(operador.equals("/"))
+                ret = "0";
+            else
+                ret = "-" + y;
+        }
+        else if((x.equals("0") || y.equals("0")) && operador.equals("*")) 
+            ret = "0";
+        else 
+            ret = x + " " + operador + " " + y;
+
+        return ret;
     }
 }
