@@ -1,6 +1,9 @@
 package primerproyecto;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -36,6 +39,7 @@ public class App
         // Solicito al parser que comience indicando una regla gramatical
         // En este caso la regla es el simbolo inicial
         ParseTree tree =  parser.programa();
+        System.out.println("Termino el parseo.");
        
         // Conectamos el visitor
         if(((Escucha) escucha).getError()) {
@@ -44,12 +48,32 @@ public class App
         else {
             Visitor visitor = new Visitor();
             visitor.visit(tree);
-    
+            System.out.println("Se genero el TAC.");
+            
             Optimizador opt = new Optimizador();
 
-            String code_opt = opt.Optimizar("tac");
+            String code_opt1 = opt.Optimizar("tac");
 
-            code_opt = opt.Optimizar(code_opt);//para hacer mas pasadas
+            Boolean optimizo = true;
+            while(optimizo) {//hago pasadas hasta que no se optimice mas nada
+                String code_opt2 = opt.Optimizar(code_opt1);
+
+                try {
+                    byte[] f1 = Files.readAllBytes(Paths.get(code_opt1));
+                    byte[] f2 = Files.readAllBytes(Paths.get(code_opt2));
+                    
+                    code_opt1 = code_opt2;
+
+                    if(Arrays.equals(f1,f2)) {//detecto que no optimiza mas y elimino el ultimo output
+                        Files.delete(Paths.get(code_opt2));
+                        optimizo = false;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            System.out.println("Termino la optimizacion.");
         }
     }
 }

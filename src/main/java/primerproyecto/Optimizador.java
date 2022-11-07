@@ -114,14 +114,13 @@ public class Optimizador {
                     String[] operacion = l.split("=",2);
                     String variableAsignada = operacion[0].trim();
 
-                    if(pasada > 1 && !used.get(pasada - 2).contains(variableAsignada))
+                    if(pasada > 1 && !used.get(pasada - 2).contains(variableAsignada))//elimino no usados
                         continue;                    
 
+                    Integer value = 0;
                     String[] ops = operacion[1].split("[|][|]|[&][&]|[><=][=]|[-+/%|&<>*]");
                     String op1 = ops[0].trim();
                     String operator = getOperator(l);
-
-                    Integer value = 0;
 
                     if(op1.length() == 0) {//caso negativos
                         op1 = ops[1].trim();
@@ -152,9 +151,16 @@ public class Optimizador {
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op1.charAt(0))) {//var que no conozco valor
                                 if(asignaciones.containsKey(op1)) {//escribo la ultima asignacion conocida
-                                    output += asignaciones.get(op1);
-                                    asignaciones.remove(op1);
+                                    String asignacion = asignaciones.get(op1);
+                                    output += asignacion;
+                                    
+                                    String aux = op1;
+                                    if(getOperator(asignacion) == null) //x = y
+                                        op1 = asignacion.substring(asignacion.indexOf("=") + 1).trim();
+                                    
+                                    asignaciones.remove(aux);
                                 }
+
                                 used.getLast().add(op1);
                                 opero = false;
                             }
@@ -165,9 +171,16 @@ public class Optimizador {
                         else {//es un num o var que no conozco lo que vale
                             if(isTmpOrId(op2.charAt(0))) {//var que no conozco valor
                                 if(asignaciones.containsKey(op2)) {//escribo la ultima asignacion conocida
-                                    output += asignaciones.get(op2);
-                                    asignaciones.remove(op2);
+                                    String asignacion = asignaciones.get(op2);
+                                    output += asignacion;
+                                    
+                                    String aux = op2;
+                                    if(getOperator(asignacion) == null) //x = y
+                                        op2 = asignacion.substring(asignacion.indexOf("=") + 1).trim();
+                                    
+                                    asignaciones.remove(aux);
                                 }
+
                                 used.getLast().add(op2);
                                 opero = false;
                             }
@@ -191,15 +204,17 @@ public class Optimizador {
                             }
                             else {
                                 Boolean asigne = false;
-                                for(String k : asignaciones.keySet()) {
-                                    if(asignaciones.get(k).contains(" = " + op1 + " " + operator + " " + op2)) {//caso a = x + z y b = x + z -> b = a
-                                        output += asignaciones.get(k);
+                                for(String k : asignaciones.keySet()) {//veo caso a = x + z y b = x + z -> b = a
+                                    String asignacion = asignaciones.get(k);
+                                    if(asignacion.contains(" = " + op1 + " " + operator + " " + op2)) {
+                                        output += asignacion;
                                         asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + k);
                                         asignaciones.remove(k);
                                         asigne = true;
                                         break;
-                                    }
-                                }                            
+                                    }                                       
+                                }       
+
                                 if(!asigne){//cuando no pude operar por no tener disponible el valor de algun operando
                                     String aux = operoConVars(operator, op1, op2);
                                     asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + aux);
@@ -225,7 +240,7 @@ public class Optimizador {
                                 }
                                 else {//x = y -> marco y usada
                                     used.getLast().add(op1);
-                                    output += "\n" + l;
+                                    asignaciones.put(variableAsignada, "\n" + l);
                                 }
                             }
                             else {//es un numero
@@ -252,7 +267,7 @@ public class Optimizador {
                     output += "\n" + l;
                 }
                 else if(l.contains("lbl") || l.contains("jmp") || l.contains("ret")) {
-                    for(String k : asignaciones.keySet()) 
+                    for(String k : asignaciones.keySet()) //imprimo todas las asignaciones antes de salir del bloque
                         if(asignaciones.get(k) != null) {
                             noElimine = false;
                             output += asignaciones.get(k);
@@ -268,7 +283,7 @@ public class Optimizador {
                     Integer val = 0;
                     String var = l.substring(4, l.indexOf("goto")).trim();
 
-                    for(String k : asignaciones.keySet()) 
+                    for(String k : asignaciones.keySet()) //imprimo todas las asignaciones antes de salir del bloque
                         if(asignaciones.get(k) != null) {
                             noElimine = false;
                             output += asignaciones.get(k);
@@ -277,10 +292,9 @@ public class Optimizador {
 
                     if(vars.containsKey(var)) {//si existe el valor reemplazo la variable
                         val = vars.get(var);
-                        var = String.valueOf(val);
                         
                         String label = l.substring(l.indexOf("goto") + 5).trim();
-                        output += "\n\tifz " + var + " goto " + label;
+                        output += "\n\tifz " + val + " goto " + label;
                     }
                     else {//es un num o no conozco el valor
                         if(isTmpOrId(var.charAt(0))) {//es tmp o id
@@ -294,12 +308,11 @@ public class Optimizador {
                         
                         output += "\n" + l;
                     }
-
                 }                
             }
 
             if(noElimine) {
-                for(String k : asignaciones.keySet()) 
+                for(String k : asignaciones.keySet()) //imprimo todas las asignaciones antes de salir del bloque
                     if(asignaciones.get(k) != null) {
                         output += asignaciones.get(k);
                         asignaciones.put(k, null);
