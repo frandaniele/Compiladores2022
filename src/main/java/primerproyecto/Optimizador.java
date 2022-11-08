@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Optimizador {
+    private HashSet<String> objectives;
     private LinkedList<LinkedList<String>> blocks;
     private LinkedList<LinkedList<String>> used;
     private List<String> code;
@@ -67,7 +68,7 @@ public class Optimizador {
      */
     private LinkedList<LinkedList<String>> getBlocks(List<String> code) {
         LinkedList<LinkedList<String>> blocks = new LinkedList<LinkedList<String>>();
-        HashSet<String> objectives = new HashSet<String>();
+        objectives = new HashSet<String>();
         
         for (String line : code) {//los objetivos de un salto son lideres de bloques
             if(line.startsWith("\tifz ") || line.startsWith("\tjmp l"))
@@ -107,8 +108,12 @@ public class Optimizador {
         for(LinkedList<String> b : blocks){
             HashMap<String, Integer> vars = new HashMap<String, Integer>();
             HashMap<String, String> asignaciones = new HashMap<String, String>();
+            Boolean skip_block = false;
             
             for(String l : b) {
+                if(skip_block)
+                    continue;
+
                 if(l.contains("=")) { //es una operacion
                     String[] operacion = l.split("=",2);
                     String variableAsignada = operacion[0].trim();
@@ -149,10 +154,11 @@ public class Optimizador {
                             if(isTmpOrId(op1.charAt(0))) {//var que no conozco valor
                                 if(asignaciones.containsKey(op1)) {//escribo la ultima asignacion conocida
                                     String asignacion = asignaciones.get(op1);
-                                    output += asignacion;
+                                    if(asignacion != null)
+                                        output += asignacion;
                                     
                                     String aux = op1;
-                                    if(getOperator(asignacion) == null) //x = y
+                                    if(asignacion != null && getOperator(asignacion) == null) //x = y
                                         op1 = asignacion.substring(asignacion.indexOf("=") + 1).trim();
                                     
                                     asignaciones.remove(aux);
@@ -169,7 +175,8 @@ public class Optimizador {
                             if(isTmpOrId(op2.charAt(0))) {//var que no conozco valor
                                 if(asignaciones.containsKey(op2)) {//escribo la ultima asignacion conocida
                                     String asignacion = asignaciones.get(op2);
-                                    output += asignacion;
+                                    if(asignacion != null)
+                                        output += asignacion;
                                     
                                     String aux = op2;
                                     if(getOperator(asignacion) == null) //x = y
@@ -202,7 +209,7 @@ public class Optimizador {
                                 Boolean asigne = false;
                                 for(String k : asignaciones.keySet()) {//veo caso a = x + z y b = x + z -> b = a
                                     String asignacion = asignaciones.get(k);
-                                    if(asignacion.contains(" = " + op1 + " " + operator + " " + op2)) {
+                                    if(asignacion != null && asignacion.contains(" = " + op1 + " " + operator + " " + op2)) {
                                         output += asignacion;
                                         asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + k);
                                         asignaciones.remove(k);
@@ -247,16 +254,26 @@ public class Optimizador {
                 }
                 else if(l.contains("push")) {
                     String var = l.substring(l.trim().indexOf(" ") + 1).trim();
+
                     output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea
+                    
+                    if(var.matches("[l][0-9]+"))//si pusheo un label quiere decir que luego vuelvo a el
+                        objectives.add("lbl " + var);
                 }
                 else if(l.contains("pop")) {
                     output += "\n" + l;
                 }
                 else if(l.contains("lbl") || l.contains("jmp") || l.contains("ret")) {
-                    output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
+                    if(l.contains("lbl"))
+                        if(!objectives.contains(l))//si a este bloque no voy nunca
+                            skip_block = true;
 
-                    if(l.contains("ret"))
-                        output += "\n";
+                    if(!skip_block) {    
+                        output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
+
+                        if(l.contains("ret"))
+                            output += "\n";
+                    }
                 }
                 else if(l.contains("ifz")) {
                     String var = l.substring(4, l.indexOf("goto")).trim();
