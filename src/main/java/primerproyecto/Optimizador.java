@@ -107,7 +107,6 @@ public class Optimizador {
         for(LinkedList<String> b : blocks){
             HashMap<String, Integer> vars = new HashMap<String, Integer>();
             HashMap<String, String> asignaciones = new HashMap<String, String>();
-            Boolean noElimine = true;
             
             for(String l : b) {
                 if(l.contains("=")) { //es una operacion
@@ -127,18 +126,16 @@ public class Optimizador {
 
                         if(vars.containsKey(op1)) {//es var que conozco el valor
                             value = -vars.get(op1);
-                            vars.put(variableAsignada, value);
-                            asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
+                            addVarWithValue(variableAsignada, value, vars, asignaciones);                            
                         }
                         else {
                             if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
                                 used.getLast().add(op1);
-                                output += "\n\t" + variableAsignada + " = -" + op1;
+                                asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = -" + op1);
                             }
                             else {//es un numero
                                 value = -(int) Double.parseDouble(op1);
-                                vars.put(variableAsignada, value);
-                                asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
+                                addVarWithValue(variableAsignada, value, vars, asignaciones);
                             }                                   
                         }
                     }
@@ -188,14 +185,13 @@ public class Optimizador {
 
                         if(opero) {//tengo disponibles los valores
                             value = operate(operator, op1, op2);
-                            vars.put(variableAsignada, value);
-                            asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + value);
+                            addVarWithValue(variableAsignada, value, vars, asignaciones);
                         }
                         else {//no pude obtener un resultado
                             if(operacionNeutra(operator, op1, op2)) {//resuelvo 1*x, 0+x etc
                                 String op = op2;
 
-                                if(op2.equals("1") && (operator.equals("*") || operator.equals("/")))
+                                if(op2.equals("1") && (operator.equals("*") || operator.equals("/")))//detecto cual es la variable para dejar
                                     op = op1;
                                 else if(op2.equals("0") && (operator.equals("+") || operator.equals("-")))
                                     op = op1;
@@ -228,14 +224,13 @@ public class Optimizador {
 
                         if(vars.containsKey(op1)) {//es var que conozco el valor
                             value = vars.get(op1);
-                            vars.put(variableAsignada, value);
-                            asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
+                            addVarWithValue(variableAsignada, value, vars, asignaciones);
                         }
                         else {
                             if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
-                                if(asignaciones.containsKey(op1)) {//reemplazo t = a op b -> x = t por x = a op b
+                                if(asignaciones.containsKey(op1)) {//reemplazo t = a op b, y x = t por x = a op b
                                     String tmp = asignaciones.get(op1).trim();
-                                    output += "\n\t" + variableAsignada + " = " + tmp.substring(tmp.indexOf("=") + 1).trim();
+                                    asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + tmp.substring(tmp.indexOf("=") + 1).trim());
                                     asignaciones.remove(op1);
                                 }
                                 else {//x = y -> marco y usada
@@ -245,84 +240,55 @@ public class Optimizador {
                             }
                             else {//es un numero
                                 value = (int) Double.parseDouble(op1);
-                                vars.put(variableAsignada, value);
-                                asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + value);
+                                addVarWithValue(variableAsignada, value, vars, asignaciones);
                             }                                   
                         }
                     }
                 }
                 else if(l.contains("push")) {
                     String var = l.substring(l.trim().indexOf(" ") + 1).trim();
-                    if(isTmpOrId(var.charAt(0))) {
-                        if(asignaciones.containsKey(var)) {
-                            output += asignaciones.get(var);
-                            asignaciones.remove(var);
-                        }
-                        used.getLast().add(var);
-                    }
-
-                    output += "\n" + l;
+                    output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea
                 }
                 else if(l.contains("pop")) {
                     output += "\n" + l;
                 }
                 else if(l.contains("lbl") || l.contains("jmp") || l.contains("ret")) {
-                    for(String k : asignaciones.keySet()) //imprimo todas las asignaciones antes de salir del bloque
-                        if(asignaciones.get(k) != null) {
-                            noElimine = false;
-                            output += asignaciones.get(k);
-                            asignaciones.put(k, null);
-                        }
-                    
-                    output += "\n" + l;
+                    output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
 
                     if(l.contains("ret"))
                         output += "\n";
                 }
                 else if(l.contains("ifz")) {
-                    Integer val = 0;
                     String var = l.substring(4, l.indexOf("goto")).trim();
 
-                    for(String k : asignaciones.keySet()) //imprimo todas las asignaciones antes de salir del bloque
-                        if(asignaciones.get(k) != null) {
-                            noElimine = false;
-                            output += asignaciones.get(k);
-                            asignaciones.put(k, null);
-                        }
+                    output += printAsignRestantes(asignaciones);
 
                     if(vars.containsKey(var)) {//si existe el valor reemplazo la variable
-                        val = vars.get(var);
+                        Integer val = vars.get(var);
                         
                         String label = l.substring(l.indexOf("goto") + 5).trim();
                         output += "\n\tifz " + val + " goto " + label;
                     }
-                    else {//es un num o no conozco el valor
-                        if(isTmpOrId(var.charAt(0))) {//es tmp o id
-                            if(asignaciones.containsKey(var)) {//imprimo el ultimo valor conocido de la variable
-                                if(asignaciones.get(var) != null)    
-                                    output += asignaciones.get(var);
-                                asignaciones.remove(var);
-                            }
-                            used.getLast().add(var);
-                        }                       
-                        
-                        output += "\n" + l;
-                    }
+                    else //es un num o no conozco el valor
+                        output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea                    
                 }                
             }
 
-            if(noElimine) {
-                for(String k : asignaciones.keySet()) //imprimo todas las asignaciones antes de salir del bloque
-                    if(asignaciones.get(k) != null) {
-                        output += asignaciones.get(k);
-                        asignaciones.put(k, null);
-                    }
-            }
+            output += printAsignRestantes(asignaciones);//en algunos casos quedan sin imprimir
         }
 
         return output;
     }
 
+    /**
+     * recibe strings del operador y los operandos (numeros)
+     * y realiza la operacion pertinente
+     * 
+     * @param operador
+     * @param op1
+     * @param op2
+     * @return resultado de -> op1 operador op2
+     */
     private static Integer operate(String operador, String op1, String op2) {
         Integer a = (int)Double.parseDouble(op1), b = (int)Double.parseDouble(op2);
 
@@ -375,6 +341,13 @@ public class Optimizador {
         return Character.isAlphabetic(c) || c == '_';
     }
 
+    /**
+     * recibo un string y detecto que operacion es
+     * para devolver su operador
+     * 
+     * @param operacion
+     * @return el operador
+     */
     private static String getOperator(String operacion) {
         if(operacion.contains("+"))
             return "+";
@@ -408,6 +381,14 @@ public class Optimizador {
         return null;
     }
     
+    /**
+     * detecto operaciones neutras de la matematica
+     * 
+     * @param operador
+     * @param x
+     * @param y
+     * @return true si es operacion neutra, falso caso contrario
+     */
     private static Boolean operacionNeutra(String operador, String x, String y) {
         if(operador.equals("*") && (x.equals("1") || y.equals("1")))
             return true;
@@ -424,6 +405,15 @@ public class Optimizador {
         return false;
     }
 
+    /**
+     * cuando alguno de los operandos es una variable
+     * determino cual sera el valor a asignar a una variable
+     * 
+     * @param operador
+     * @param x
+     * @param y
+     * @return la operacion determinada
+     */
     private static String operoConVars(String operador, String x, String y) {
         String ret;
 
@@ -450,6 +440,69 @@ public class Optimizador {
         else 
             ret = x + " " + operador + " " + y;
 
+        return ret;
+    }
+
+    /**
+     * cuando tengo una variable con el valro conocido
+     * la agrego al mapa de vars con su valor
+     * y al de vars con su linea de asignacion
+     * 
+     * @param name
+     * @param value
+     * @param nameVal
+     * @param nameText
+     */
+    private static void addVarWithValue(String name, Integer value, HashMap<String, Integer> nameVal, HashMap<String, String> nameText) {
+        nameVal.put(name, value);
+        nameText.put(name, "\n\t" + name + " = " + value);
+    }
+
+    /**
+     * si quedaron asignaciones sueltas 
+     * (variables que no se usaron en el bloque basico que se asignaron
+     * pero mas tarde si) las imprime
+     * 
+     * @param asignaciones
+     * @return lo que debe imprimir
+     */
+    private static String printAsignRestantes(HashMap<String, String> asignaciones) {
+        String ret = "";
+        
+        for(String k : asignaciones.keySet()) //imprimo todas las asignaciones antes de salir del bloque
+            if(asignaciones.get(k) != null) {
+                ret += asignaciones.get(k);
+                asignaciones.put(k, null);//para no volverlas a imprimir
+            }
+
+        return ret;
+    }
+
+    /**
+     * esta funcion se fija si debe imprimir 
+     * la ultima asignacion de una variable
+     * y la marca usada
+     * en el caso de que se necesite
+     * caso contrario no hace nada
+     * 
+     * @param var
+     * @param asignaciones
+     * @param used
+     * @return string vacio o la ultima asignacion de la variable
+     */
+    private static String getVarValue(String var, HashMap<String, String> asignaciones, LinkedList<LinkedList<String>> used) {
+        String ret = "";
+        
+        if(isTmpOrId(var.charAt(0))) {
+            if(asignaciones.containsKey(var)) {
+                if(asignaciones.get(var) != null) {
+                    ret += asignaciones.get(var);
+                    asignaciones.remove(var);
+                }
+            }
+            used.getLast().add(var);
+        }
+    
         return ret;
     }
 }
