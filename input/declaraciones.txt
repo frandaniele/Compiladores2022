@@ -1,12 +1,44 @@
-int calcular (int x, int y) {
-	return x + y;
-}	
-	
-int main() {
-    int x = 3, y = 2, z;
+int calcular(int x, int y);
 
-    z = calcular(x, y);
-    //y = calcular(x, z);
+void a();
 
-    return z;
+int calcular2(int x) {
+    return calcular(x,2)*3;
 }
+
+int main() {
+    int z,j = 33, i =++j + 00004 , x=calcular(j=00000000+ ++i, 3+j++)*i++ + 5*(904045/3-1) == 4 | 9*(3+2)+calcular(j=i*3,i=3*j);
+
+    i = j/j++;
+    
+    a();
+    
+    calcular2(j=i++);
+
+    x = --j + ++i;
+    i = 2;
+    j = 3;
+    if(i < j)
+        x = ++i * ++j;
+    else if(i>j){
+        for(int i = 3; i < 5; ++i)
+            z = 3;
+    }
+    else 
+        x = 4 & j;
+
+    return x*z;
+}
+
+void a(){
+    int b = 3;
+    b++;
+
+    return;
+}
+
+int calcular(int x, int y) {
+    return x + y;
+}
+
+main();
