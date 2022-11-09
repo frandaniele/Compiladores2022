@@ -119,6 +119,7 @@ public class Optimizador {
         
         
         Boolean branch = false;
+        Boolean skip_branch = false;
         for(LinkedList<String> b : blocks){
             Boolean skip_block = false;
 
@@ -149,6 +150,7 @@ public class Optimizador {
                             if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
                                 used.getLast().add(op1);
                                 asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = -" + op1);
+                                vars.remove(variableAsignada);//no conozco mas su valor
                             }
                             else {//es un numero
                                 value = -(int) Double.parseDouble(op1);
@@ -216,6 +218,7 @@ public class Optimizador {
                                     op = op1;
 
                                 asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + op);
+                                vars.remove(variableAsignada);//no conozco mas su valor
                             }
                             else {
                                 Boolean asigne = false;
@@ -224,6 +227,7 @@ public class Optimizador {
                                     if(asignacion != null && asignacion.contains(" = " + op1 + " " + operator + " " + op2)) {
                                         output += asignacion;
                                         asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + k);
+                                        vars.remove(variableAsignada);//no conozco mas su valor                                        
                                         asignaciones.remove(k);
                                         asigne = true;
                                         break;
@@ -232,6 +236,11 @@ public class Optimizador {
 
                                 if(!asigne){//cuando no pude operar por no tener disponible el valor de algun operando
                                     String aux = operoConVars(operator, op1, op2);
+                                    if(aux.equals("1") || aux.equals("0"))//conozco el valor
+                                        vars.put(variableAsignada, Integer.parseInt(aux));
+                                    else
+                                        vars.remove(variableAsignada);//no conozco mas su valor
+
                                     asignaciones.put(variableAsignada,"\n\t" + variableAsignada + " = " + aux);
                                 }
                             }
@@ -249,13 +258,19 @@ public class Optimizador {
                             if(isTmpOrId(op1.charAt(0))) {//es tmp o id q no conozco valor
                                 if(asignaciones.containsKey(op1)) {//reemplazo t = a op b, y x = t por x = a op b
                                     String tmp = asignaciones.get(op1).trim();
+
+                                    output += printUsedVars(tmp, asignaciones);
+
                                     asignaciones.put(variableAsignada, "\n\t" + variableAsignada + " = " + tmp.substring(tmp.indexOf("=") + 1).trim());
-                                    asignaciones.remove(op1);
+                                    
+                                    if(op1.matches("[t][0-9]+"))//si no es tmp no la elimino
+                                        asignaciones.remove(op1);
                                 }
                                 else {//x = y -> marco y usada
                                     used.getLast().add(op1);
                                     asignaciones.put(variableAsignada, "\n" + l);
                                 }
+                                vars.remove(variableAsignada);//no conozco mas su valor
                             }
                             else {//es un numero
                                 value = (int) Double.parseDouble(op1);
@@ -275,31 +290,33 @@ public class Optimizador {
                 else if(l.contains("pop")) {
                     output += "\n" + l;
                 }
-                else if(l.contains("lbl") || l.contains("jmp") || l.contains("ret")) {
-                    if(l.contains("lbl")){
-                        if(!objectives.contains(l))//si a este bloque no voy nunca
-                            skip_block = true;
+                else if(l.contains("lbl")) {
+                    if(!objectives.contains(l))//si a este bloque no voy nunca
+                        skip_block = true;
 
-                        if(!branches.contains(l.trim()) && branch) {
-                            branch = false;
-                            vars = new HashMap<String, Integer>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
-                            asignaciones = new HashMap<String, String>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
-                        }
-                        else if(branches.contains(l.trim())) {//en un else tengo que volver al contexto que estaba antes de los ifs
-                            vars = new HashMap<String, Integer>(vars_global);
-                            asignaciones = new HashMap<String, String>(asignaciones_global);
-                        }
+                    if(!branches.contains(l.trim()) && branch) {
+                        branch = false;
+                        vars = new HashMap<String, Integer>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
+                        asignaciones = new HashMap<String, String>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
                     }
-                     
-                    if(!skip_block) {    
+                    else if(branches.contains(l.trim())) {//en un else tengo que volver al contexto que estaba antes de los ifs
+                        vars = new HashMap<String, Integer>(vars_global);
+                        asignaciones = new HashMap<String, String>(asignaciones_global);
+                    }
+                    
+                    if(!skip_block)    
                         output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
+                }
+                else if(l.contains("jmp")) {
+                    if(!skip_block)    
+                        output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
+                }
+                else if(l.contains("ret")) {
+                    if(!skip_block)    
+                        output += printAsignRestantes(asignaciones) + "\n" + l + "\n";//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
 
-                        if(l.contains("ret")) {
-                            output += "\n";
-                            asignaciones = new HashMap<String, String>();
-                            vars = new HashMap<String, Integer>();
-                        }
-                    }
+                    asignaciones = new HashMap<String, String>();
+                    vars = new HashMap<String, Integer>();
                 }
                 else if(l.contains("ifz")) {
                     output += printAsignRestantes(asignaciones);
@@ -316,16 +333,20 @@ public class Optimizador {
                     if(vars.containsKey(var)) {//si existe el valor reemplazo la variable
                         Integer val = vars.get(var);
                         
-                        //if(val != 0)
+                        //if(val != 0) {
                         //    objectives.remove("lbl " + branch_label);//no voy a saltar a este porque salto si 0 
+                        //    skip_branch = true;
+                        //}
 
                         output += "\n\tifz " + val + " goto " + branch_label;
                     }
                     else {//es un num o no conozco el valor
                         output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea                    
                         
-                        //if(!var.equals("0"))
-                        //    objectives.remove("lbl " + branch_label);//no voy a saltar a este porque salto si 0 
+                       // if(!var.equals("0")) {
+                       //     objectives.remove("lbl " + branch_label);//no voy a saltar a este porque salto si 0 
+                       //     skip_branch = true;
+                       // }
                     }
                 }                
             }
@@ -530,6 +551,29 @@ public class Optimizador {
                 ret += asignaciones.get(k);
                 asignaciones.put(k, null);//para no volverlas a imprimir
             }
+
+        return ret;
+    }
+
+    private static String printUsedVars(String op, HashMap<String, String> asignaciones) {
+        String ret = "";
+        
+        String[] opsToPrint = op.substring(op.indexOf("=") + 1).split("[|][|]|[&][&]|[><=][=]|[-+/%|&<>*]");
+        String opToPrint = opsToPrint[0];
+        if(asignaciones.containsKey(opToPrint)) {//escribo la ultima asignacion conocida
+            String asignacion = asignaciones.get(opToPrint);
+            if(asignacion != null)
+                ret += asignacion;
+        }
+        
+        if(opsToPrint.length > 1) {
+            opToPrint = opsToPrint[1];
+            if(asignaciones.containsKey(opToPrint)) {//escribo la ultima asignacion conocida
+                String asignacion = asignaciones.get(opToPrint);
+                if(asignacion != null)
+                    ret += asignacion;
+            }
+        }
 
         return ret;
     }

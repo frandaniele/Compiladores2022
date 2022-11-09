@@ -13,10 +13,10 @@ int main() {
     
     a();
     
-    calcular2(j=i++);
+    i = calcular2(j=i++);
 
     x = --j + ++i;
-    i = 2;
+    i = 2+x;
     j = 3;
     if(i < j)
         x = ++i * ++j;
