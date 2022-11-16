@@ -11,6 +11,7 @@ import java.util.List;
 public class Optimizador {
     private HashSet<String> objectives;
     private HashSet<String> branches;
+    private HashSet<String> emptyFunctions;
     private LinkedList<LinkedList<String>> blocks;
     private LinkedList<LinkedList<String>> used;
     private List<String> code;
@@ -20,6 +21,7 @@ public class Optimizador {
     public Optimizador() {
         blocks = new LinkedList<LinkedList<String>>();
         used = new LinkedList<LinkedList<String>>();
+        emptyFunctions = new HashSet<String>();
         output = "";
         code = null;    
         pasada = 1;    
@@ -27,6 +29,8 @@ public class Optimizador {
      
     public String Optimizar(String path) {
         code = getCode(path);
+        
+        objectives = getObjectives(code);
 
         blocks = getBlocks(code);
 
@@ -61,6 +65,30 @@ public class Optimizador {
     }
 
     /**
+     * genera los objetivos del codigo
+     * y las lineas branch
+     * 
+     * @param code
+     * @return set de objetivos
+     */
+    private HashSet<String> getObjectives(List<String> code) {
+        HashSet<String> ret = new HashSet<String>();
+        branches = new HashSet<String>();
+        
+        for (String line : code) {//los objetivos de un salto son lideres de bloques
+            if(line.startsWith("\tifz ") || line.startsWith("\tjmp l")) {
+                String label = "lbl " + line.substring(line.indexOf('l'));
+                ret.add(label);
+
+                if(line.startsWith("\tifz"))
+                    branches.add(label);
+            }
+        }
+
+        return ret;
+    }
+
+    /**
      * Esta funcion toma una lista de strings que son el codigo del programa a optimizar
      * y divide el codigo en bloques basicos de TAC
      * 
@@ -69,18 +97,6 @@ public class Optimizador {
      */
     private LinkedList<LinkedList<String>> getBlocks(List<String> code) {
         LinkedList<LinkedList<String>> blocks = new LinkedList<LinkedList<String>>();
-        objectives = new HashSet<String>();
-        branches = new HashSet<String>();
-        
-        for (String line : code) {//los objetivos de un salto son lideres de bloques
-            if(line.startsWith("\tifz ") || line.startsWith("\tjmp l")) {
-                String label = "lbl " + line.substring(line.indexOf('l'));
-                objectives.add(label);
-
-                if(line.startsWith("\tifz"))
-                    branches.add(label);
-            }
-        }
         
         LinkedList<String> block = new LinkedList<String>();
         for (String line : code) {
@@ -117,10 +133,11 @@ public class Optimizador {
         HashMap<String, Integer> vars_global = new HashMap<String, Integer>();
         HashMap<String, String> asignaciones_global = new HashMap<String, String>();
         
-        
         Boolean branch = false;
-        Boolean skip_branch = false;
+        //Boolean skip_branch = false;
         for(LinkedList<String> b : blocks){
+            Boolean function_empty = true; //para eliminar funciones que no hacen nada
+            String last_label = "";
             Boolean skip_block = false;
 
             for(String l : b) {
@@ -128,11 +145,16 @@ public class Optimizador {
                     continue;
 
                 if(l.contains("=")) { //es una operacion
+                    //if(skip_branch)
+                    //    continue;
+                    
                     String[] operacion = l.split("=",2);
                     String variableAsignada = operacion[0].trim();
 
                     if(pasada > 1 && !used.get(pasada - 2).contains(variableAsignada))//elimino no usados
                         continue;                    
+
+                    function_empty = false;
 
                     Integer value = 0;
                     String[] ops = operacion[1].split("[|][|]|[&][&]|[><=][=]|[-+/%|&<>*]");
@@ -280,6 +302,10 @@ public class Optimizador {
                     }
                 }
                 else if(l.contains("push")) {
+                    //if(skip_branch)
+                    //    continue;
+                    function_empty = false;
+
                     String var = l.substring(l.trim().indexOf(" ") + 1).trim();
 
                     output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea
@@ -288,37 +314,53 @@ public class Optimizador {
                         objectives.add("lbl " + var);
                 }
                 else if(l.contains("pop")) {
+                   // if(skip_branch)
+                   //     continue;
+                    function_empty = false;
+
                     output += "\n" + l;
                 }
                 else if(l.contains("lbl")) {
-                    if(!objectives.contains(l))//si a este bloque no voy nunca
+                    if(!objectives.contains(l) || emptyFunctions.contains(l))//si a este bloque no voy nunca
                         skip_block = true;
 
                     if(!branches.contains(l.trim()) && branch) {
                         branch = false;
                         vars = new HashMap<String, Integer>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
                         asignaciones = new HashMap<String, String>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
+                       // skip_branch = false;
                     }
                     else if(branches.contains(l.trim())) {//en un else tengo que volver al contexto que estaba antes de los ifs
                         vars = new HashMap<String, Integer>(vars_global);
                         asignaciones = new HashMap<String, String>(asignaciones_global);
                     }
                     
+                    //if(!skip_block && !skip_branch)    
                     if(!skip_block)    
                         output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
+                
+                    last_label = l.trim();
                 }
                 else if(l.contains("jmp")) {
-                    if(!skip_block)    
+                    if(!skip_block && !emptyFunctions.contains("lbl " + l.substring(l.indexOf("l")))) {
+                        function_empty = false;
                         output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
+                    }    
                 }
                 else if(l.contains("ret")) {
-                    if(!skip_block)    
+                    if(function_empty) //elimino funciones que no hacen nada
+                        emptyFunctions.add(last_label);
+                    //     else if(!skip_block && !skip_branch)    
+                    else if(!skip_block)    
                         output += printAsignRestantes(asignaciones) + "\n" + l + "\n";//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
 
                     asignaciones = new HashMap<String, String>();
                     vars = new HashMap<String, Integer>();
                 }
                 else if(l.contains("ifz")) {
+                    //if(skip_branch)
+                    //    continue;
+
                     output += printAsignRestantes(asignaciones);
                     
                     if(!branch) {
@@ -326,7 +368,6 @@ public class Optimizador {
                         vars_global = new HashMap<String, Integer>(vars);
                         asignaciones_global = new HashMap<String, String>(asignaciones);
                     }
-                    
                     
                     String branch_label = l.substring(l.indexOf("goto") + 5).trim();
                     String var = l.substring(4, l.indexOf("goto")).trim();
@@ -343,10 +384,10 @@ public class Optimizador {
                     else {//es un num o no conozco el valor
                         output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea                    
                         
-                       // if(!var.equals("0")) {
-                       //     objectives.remove("lbl " + branch_label);//no voy a saltar a este porque salto si 0 
+                        //if(!var.equals("0")) {
+                        //    objectives.remove("lbl " + branch_label);//no voy a saltar a este porque salto si 0 
                        //     skip_branch = true;
-                       // }
+                   //     }
                     }
                 }                
             }
@@ -555,6 +596,13 @@ public class Optimizador {
         return ret;
     }
 
+    /**
+     * si hay una operacion con variables, antes de ser leida escribo su ultimo valor 
+     * 
+     * @param op
+     * @param asignaciones
+     * @return string para agregar al output
+     */
     private static String printUsedVars(String op, HashMap<String, String> asignaciones) {
         String ret = "";
         
