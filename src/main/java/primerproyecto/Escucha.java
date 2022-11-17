@@ -219,7 +219,13 @@ public class Escucha extends declaracionesBaseListener {
     
     @Override
     public void exitFactor(FactorContext ctx) {
-        if(ctx.ID() != null && !redefinition && !nested) {//si hay un id en una operacion aritmetica logica, se considera usada
+        if(ctx.PA() != null) {
+            if(ctx.oal() == null || ctx.oal().getText().equals("")) {
+                error = true;
+                System.out.println("error: expected expression before ‘)’ token");
+            }
+        }
+        else if(ctx.ID() != null && !redefinition && !nested) {//si hay un id en una operacion aritmetica logica, se considera usada
             setVarUsed(ctx.ID().getText());
         }
     }

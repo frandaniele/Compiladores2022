@@ -251,13 +251,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
         return output;
     }
-
-    @Override
+    
     public String visitFc_params(Fc_paramsContext ctx) {
         if(ctx.ID() != null)
             output += "\n\tpush " + ctx.ID().getText();
         else if(ctx.SYMBOL() != null) 
-            output += "\n\tpush " + ctx.SYMBOL().getText().charAt(1);
+            output += "\n\tpush " + String.valueOf(Integer.valueOf(ctx.SYMBOL().getText().charAt(1)));
         else if(ctx.ENTERO() != null)
             output += "\n\tpush " + ctx.ENTERO().getText();
         else if(ctx.oal() != null){

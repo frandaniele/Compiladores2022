@@ -134,7 +134,6 @@ public class Optimizador {
         HashMap<String, String> asignaciones_global = new HashMap<String, String>();
         
         Boolean branch = false;
-        //Boolean skip_branch = false;
         for(LinkedList<String> b : blocks){
             Boolean function_empty = true; //para eliminar funciones que no hacen nada
             String last_label = "";
@@ -145,9 +144,6 @@ public class Optimizador {
                     continue;
 
                 if(l.contains("=")) { //es una operacion
-                    //if(skip_branch)
-                    //    continue;
-                    
                     String[] operacion = l.split("=",2);
                     String variableAsignada = operacion[0].trim();
 
@@ -302,22 +298,20 @@ public class Optimizador {
                     }
                 }
                 else if(l.contains("push")) {
-                    //if(skip_branch)
-                    //    continue;
                     function_empty = false;
 
                     String var = l.substring(l.trim().indexOf(" ") + 1).trim();
 
-                    output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea
+                    if(vars.get(var) != null) 
+                        output += "\n\tpush " + vars.get(var); 
+                    else
+                        output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea
                     
                     if(var.matches("[l][0-9]+"))//si pusheo un label quiere decir que luego vuelvo a el
                         objectives.add("lbl " + var);
                 }
                 else if(l.contains("pop")) {
-                   // if(skip_branch)
-                   //     continue;
                     function_empty = false;
-
                     output += "\n" + l;
                 }
                 else if(l.contains("lbl")) {
@@ -328,14 +322,12 @@ public class Optimizador {
                         branch = false;
                         vars = new HashMap<String, Integer>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
                         asignaciones = new HashMap<String, String>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
-                       // skip_branch = false;
                     }
                     else if(branches.contains(l.trim())) {//en un else tengo que volver al contexto que estaba antes de los ifs
                         vars = new HashMap<String, Integer>(vars_global);
                         asignaciones = new HashMap<String, String>(asignaciones_global);
                     }
                     
-                    //if(!skip_block && !skip_branch)    
                     if(!skip_block)    
                         output += printAsignRestantes(asignaciones) + "\n" + l;//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
                 
@@ -350,7 +342,6 @@ public class Optimizador {
                 else if(l.contains("ret")) {
                     if(function_empty) //elimino funciones que no hacen nada
                         emptyFunctions.add(last_label);
-                    //     else if(!skip_block && !skip_branch)    
                     else if(!skip_block)    
                         output += printAsignRestantes(asignaciones) + "\n" + l + "\n";//me fijo si tengo queimprimir asignaciones y luego imprimi la linea
 
@@ -358,9 +349,6 @@ public class Optimizador {
                     vars = new HashMap<String, Integer>();
                 }
                 else if(l.contains("ifz")) {
-                    //if(skip_branch)
-                    //    continue;
-
                     output += printAsignRestantes(asignaciones);
                     
                     if(!branch) {
@@ -373,22 +361,10 @@ public class Optimizador {
                     String var = l.substring(4, l.indexOf("goto")).trim();
                     if(vars.containsKey(var)) {//si existe el valor reemplazo la variable
                         Integer val = vars.get(var);
-                        
-                        //if(val != 0) {
-                        //    objectives.remove("lbl " + branch_label);//no voy a saltar a este porque salto si 0 
-                        //    skip_branch = true;
-                        //}
-
                         output += "\n\tifz " + val + " goto " + branch_label;
                     }
-                    else {//es un num o no conozco el valor
+                    else //es un num o no conozco el valor
                         output += getVarValue(var, asignaciones, used) + "\n" + l;//me fijo si tengo queimprimir asignacion y luego imprimi la linea                    
-                        
-                        //if(!var.equals("0")) {
-                        //    objectives.remove("lbl " + branch_label);//no voy a saltar a este porque salto si 0 
-                       //     skip_branch = true;
-                   //     }
-                    }
                 }                
             }
 
