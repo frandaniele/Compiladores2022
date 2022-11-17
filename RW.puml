@@ -1,0 +1,44 @@
+@startuml RW
+
+class TablaSimbolos {
+    - String output
+}
+
+
+class Optimizador {
+    - String output
+}
+
+class Visitor {
+    - LinkedList<HashMap<String, Integer>> simbolos
+    - String output
+}
+
+class FileRW {
+    + LinkedList<HashMap<String, Integer>> readFile ( String )
+    + writeFile ( String, String )
+}
+
+interface Map
+
+interface Scanner
+
+interface FileWriter
+
+interface PrintWriter
+
+interface List
+
+Scanner <-- FileRW 
+FileWriter <-- FileRW 
+PrintWriter <-- FileRW 
+List <-- FileRW 
+
+FileRW <- TablaSimbolos
+FileRW <-- Visitor
+Optimizador -> FileRW
+
+Visitor -> List
+List --> Map
+
+@enduml

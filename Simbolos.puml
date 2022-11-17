@@ -1,0 +1,51 @@
+@startuml Simbolos
+
+class TablaSimbolos {
+    - List<Map<String, Id>> lista
+    - TablaSimbolos instance
+    + TablaSimbolos getInstance ( )
+    + addContext ( )
+    + delContext ( )
+    + addSimbolo ( Id )
+    + Id buscarSimbolo ( String )
+    + Id buscarSimboloLocal ( String )
+}
+
+abstract class Id <<abstract>> {
+ - String nombre
+ - TipoDato tipo
+ - Boolean usado
+ - Boolean init
+}
+
+class Variable {}
+
+class Funcion {
+    - LinkedList<TipoDato> args
+    - Integer estado
+    + addArg ( TipoDato )
+    + setEstado ( Integer )
+}
+
+enum TipoDato {
+    VOID 
+    INT 
+    DOUBLE
+    CHAR
+}
+
+interface List
+
+interface Map
+
+TablaSimbolos -> Id
+TablaSimbolos --> List
+List --> Map
+
+Id -> TipoDato
+Id <|-- Variable
+Id <|-- Funcion
+
+List <- Funcion
+
+@enduml

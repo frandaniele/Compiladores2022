@@ -54,9 +54,10 @@ public class App
 
             String code_opt1 = opt.Optimizar("tac");
 
-            Boolean optimizo = true;
-            while(optimizo) {//hago pasadas hasta que no se optimice mas nada
+            Integer optimizaciones = 0;
+            while(optimizaciones < 8) {//hago pasadas hasta que no se optimice mas nada
                 String code_opt2 = opt.Optimizar(code_opt1);
+                optimizaciones++;
 
                 try {
                     byte[] f1 = Files.readAllBytes(Paths.get(code_opt1));
@@ -66,7 +67,7 @@ public class App
 
                     if(Arrays.equals(f1,f2)) {//detecto que no optimiza mas y elimino el ultimo output
                         Files.delete(Paths.get(code_opt2));
-                        optimizo = false;
+                        optimizaciones = 10;
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
