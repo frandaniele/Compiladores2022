@@ -54,7 +54,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         simbolos = file_handler.readFile("simbolos");
         operandos = new LinkedList<String>();
         returns = new HashMap<String, String>();
-        new Generador();
     }
         
     @Override

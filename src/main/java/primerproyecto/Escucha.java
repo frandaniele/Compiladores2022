@@ -30,7 +30,6 @@ public class Escucha extends declaracionesBaseListener {
     @Override
     public void enterPrograma(ProgramaContext ctx) {
         System.out.println("Comienza compilacion\n*************COMPILACION*************\n");
-        new TablaSimbolos();
         agregarContexto(); //contexto global?
     }
 

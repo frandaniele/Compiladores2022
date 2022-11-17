@@ -10,7 +10,7 @@ public final class TablaSimbolos {
     private static TablaSimbolos instance;
     private String output = "";
 
-    public TablaSimbolos() {
+    private TablaSimbolos() {
         this.lista = new LinkedList< Map<String, Id> >();
     }
     

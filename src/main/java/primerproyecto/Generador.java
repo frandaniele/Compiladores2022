@@ -7,7 +7,7 @@ public class Generador {
     private Integer numV, numL;
     private LinkedList<String> vars, labels;
 
-    public Generador() {
+    private Generador() {
         this.numV = 0;
         this.numL = 0;
         this.vars = new LinkedList<String>();
