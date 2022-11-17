@@ -95,9 +95,9 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
             visitSec_elif(ctx.sec_elif());
             return output;
-        }
-
-        output += "\nlbl " + aux_lbl;
+        } 
+        else //si es solo un if
+            output += "\nlbl " + aux_lbl;
             
         return output;
     }
@@ -109,15 +109,21 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         if(ctx.IF() != null) {//es elsif
             visitOal(ctx.oal());
             
-            output += "\n\tifz " + operandos.pop() + " goto " + g.getNewLabel();
-            String exit_lbl = g.getLabel();
+            if(!(ctx.sec_elif().getText().equals(""))){//si hay otro
+                output += "\n\tifz " + operandos.pop() + " goto " + g.getNewLabel();
+                String exit_lbl = g.getLabel();
 
-            visitInstruccion(ctx.instruccion());
+                visitInstruccion(ctx.instruccion());
 
-            output += "\n\tjmp " + skip_lbl + "\nlbl " + exit_lbl;
+                output += "\n\tjmp " + skip_lbl + "\nlbl " + exit_lbl;
 
-            if(!(ctx.sec_elif().getText().equals("")))//si hay otro
                 visitSec_elif(ctx.sec_elif());
+            }
+            else {
+                output += "\n\tifz " + operandos.pop() + " goto " + skip_lbl;
+                visitInstruccion(ctx.instruccion());
+                output += "\nlbl " + skip_lbl;
+            }
         }
         else {//es else
             visitInstruccion(ctx.instruccion());
