@@ -1,0 +1,90 @@
+@startuml Listener
+
+class TablaSimbolos {
+    - List<Map<String, Id>> lista
+    - TablaSimbolos instance
+    - String output
+    + TablaSimbolos getInstance ( )
+    + addContext ( )
+    + delContext ( )
+    + addSimbolo ( Id )
+    + Id buscarSimbolo ( String )
+    + Id buscarSimboloLocal ( String )
+}
+
+class Escucha {
+    - Integer args_dec
+    - Integer cant_args
+    - Boolean redefinition
+    - Boolean in_function
+    - Boolean nested
+    - Boolean error
+    + enterPrograma ( ProgramaContext )
+    + exitPrograma ( ProgramaContext )
+    + enterBloque ( BloqueContext )
+    + exitBloque ( BloqueContext )
+    + enterIfor ( IforContext )
+    + exitIfor ( IforContext )
+    + exitIwhile ( IwhileContext )
+    + exitAsignacion ( AsignacionContext )
+    + exitFuncion ( FuncionContext )
+    + exitFun_dec ( Fun_decContext )
+    + exitSecvar ( SecvarContext )
+    + exitFactor ( FactorContext )
+    + exitOp ( OpContext )  
+    + exitFun_call ( Fun_callContext )  
+    + exitFc_params ( Fc_paramsContext )
+    - agregarContexto (  )
+    - eliminarContexto (  )
+    - setVarUsed ( String )  
+    - Integer addArgsToFunAndTS ( Funcion, Fun_decContext, TablaSimbolos, Integer )
+    - TipoDato getTipo ( String )
+    + Boolean getError (  )
+}
+
+abstract class Id <<abstract>> {
+ - String nombre
+ - TipoDato tipo
+ - Boolean usado
+ - Boolean init
+}
+
+class Variable {}
+
+class Funcion {
+    - LinkedList<TipoDato> args
+    - Integer estado
+    + addArg ( TipoDato )
+    + setEstado ( Integer )
+}
+
+class FileRW {
+    + writeFile ( String, String )
+}
+
+class declaracionesBaseListener {
+
+}
+
+interface Map
+
+interface List
+
+TablaSimbolos -> Id
+TablaSimbolos --> List
+FileRW <-- TablaSimbolos
+
+List --> Map
+
+Escucha --> TablaSimbolos
+Escucha -> Id
+Escucha -> Funcion
+Escucha -> Variable
+declaracionesBaseListener <|-- Escucha
+
+Id <|- Variable
+Id <|- Funcion
+
+List <- Funcion
+
+@enduml

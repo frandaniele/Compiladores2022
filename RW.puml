@@ -4,7 +4,6 @@ class TablaSimbolos {
     - String output
 }
 
-
 class Optimizador {
     - String output
 }

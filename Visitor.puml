@@ -1,0 +1,90 @@
+@startuml Visitor
+
+class Visitor {
+    - LinkedList<HashMap<String, Integer>> simbolos
+    - LinkedList<String> operandos
+    - HashMap<String, String> returns
+    - String output
+    - String skip_lbl
+    - String op_str
+    - Integer op
+    - Boolean funcall
+    + String visitPrograma ( ProgramaContext )
+    + String visitInstrucciones ( InstruccionesContext )
+    + String visitInstruccion ( InstruccionContext )
+    + String visitI_if ( I_ifContext )
+    + String visitSec_elif ( Sec_elifContext )
+    + String visitIfor ( IforContext )
+    + String visitIwhile ( IwhileContext )
+    + String visitFuncion ( FuncionContext )
+    + String visitFun_dec ( Fun_decContext )
+    + String visitParams ( ParamsContext )
+    + String visitSec_params ( Sec_paramsContext )
+    + String visitFun_call ( Fun_callContext )
+    + String visitFc_params ( Fc_paramsContext )
+    + String visitIreturn ( IreturnContext )
+    + String visitDeclaracion ( DeclaracionContext )
+    + String visitAsignacion ( AsignacionContext )
+    + String visitOp ( OpContext )
+    + String visitOal ( OalContext )
+    + String visitLo ( LoContext )
+    + String visitLor ( LorContext )
+    + String visitLa ( LaContext )
+    + String visitLand ( LandContext )
+    + String visitO ( OContext )
+    + String visitOr ( OrContext )
+    + String visitAn ( AnContext )
+    + String visitAnd ( AndContext )
+    + String visitE ( EContext )
+    + String visitEquality ( EqualityContext )
+    + String visitR ( RContext )
+    + String visitRelation ( RelationContext )
+    + String visitArit_exp ( Arit_expContext )
+    + String visitT ( TContext )
+    + String visitTerm ( TermContext )
+    + String visitF ( FContext )
+    + String visitFactor ( FactorContext )
+    - printOp ( String )
+    - visitNoNullChilds ( ParserRuleContext, ParserRuleContext )
+}
+
+class FileRW {
+    + LinkedList<HashMap<String, Integer>> readFile ( String )
+    + writeFile ( String, String )
+}
+
+class Generador {
+    - Generador instance
+    - Integer numV
+    - Integer numL
+    - LinkedList<String> vars
+    - LinkedList<String> labels
+    + Generador getInstance (  )
+    + Integer getnumV (  )
+    + Integer getnumL (  )
+    + LinkedList<String> getVars (  )
+    + LinkedList<String> getLabels (  )
+    + String getVar (  )
+    + String getLabel (  )
+    + String getNewVar (  )
+    + String getNewLabel (  )
+    + resetVars (  )
+    + resetLabels (  )
+}
+
+interface Map
+
+interface List
+
+Map <- List
+
+List <-- FileRW
+
+Visitor -> FileRW
+Visitor -> Generador
+Visitor -> List
+Visitor -> Map
+
+Generador --> List
+
+@enduml

@@ -1,0 +1,197 @@
+@startuml Full
+
+class App {
+    + main ( String[] )
+}
+
+class TablaSimbolos {
+    - List<Map<String, Id>> lista
+    - TablaSimbolos instance
+    - String output
+    + TablaSimbolos getInstance ( )
+    + addContext ( )
+    + delContext ( )
+    + addSimbolo ( Id )
+    + Id buscarSimbolo ( String )
+    + Id buscarSimboloLocal ( String )
+}
+
+class Escucha {
+    - Integer args_dec
+    - Integer cant_args
+    - Boolean redefinition
+    - Boolean in_function
+    - Boolean nested
+    - Boolean error
+    + enterPrograma ( ProgramaContext )
+    + exitPrograma ( ProgramaContext )
+    + enterBloque ( BloqueContext )
+    + exitBloque ( BloqueContext )
+    + enterIfor ( IforContext )
+    + exitIfor ( IforContext )
+    + exitIwhile ( IwhileContext )
+    + exitAsignacion ( AsignacionContext )
+    + exitFuncion ( FuncionContext )
+    + exitFun_dec ( Fun_decContext )
+    + exitSecvar ( SecvarContext )
+    + exitFactor ( FactorContext )
+    + exitOp ( OpContext )  
+    + exitFun_call ( Fun_callContext )  
+    + exitFc_params ( Fc_paramsContext )
+    - agregarContexto (  )
+    - eliminarContexto (  )
+    - setVarUsed ( String )  
+    - Integer addArgsToFunAndTS ( Funcion, Fun_decContext, TablaSimbolos, Integer )
+    - TipoDato getTipo ( String )
+    + Boolean getError (  )
+}
+
+abstract class Id <<abstract>> {
+ - String nombre
+ - TipoDato tipo
+ - Boolean usado
+ - Boolean init
+}
+
+enum TipoDato {
+    VOID 
+    INT 
+    DOUBLE
+    CHAR
+}
+
+class Variable {}
+
+class Funcion {
+    - LinkedList<TipoDato> args
+    - Integer estado
+    + addArg ( TipoDato )
+    + setEstado ( Integer )
+}
+
+class FileRW {
+    + LinkedList<HashMap<String, Integer>> readFile ( String )
+    + writeFile ( String, String )
+}
+
+class declaracionesBaseListener {
+
+}
+
+class Visitor {
+    - LinkedList<HashMap<String, Integer>> simbolos
+    - LinkedList<String> operandos
+    - HashMap<String, String> returns
+    - String output
+    - String skip_lbl
+    - String op_str
+    - Integer op
+    - Boolean funcall
+    + String visitPrograma ( ProgramaContext )
+    + String visitInstrucciones ( InstruccionesContext )
+    + String visitInstruccion ( InstruccionContext )
+    + String visitI_if ( I_ifContext )
+    + String visitSec_elif ( Sec_elifContext )
+    + String visitIfor ( IforContext )
+    + String visitIwhile ( IwhileContext )
+    + String visitFuncion ( FuncionContext )
+    + String visitFun_dec ( Fun_decContext )
+    + String visitParams ( ParamsContext )
+    + String visitSec_params ( Sec_paramsContext )
+    + String visitFun_call ( Fun_callContext )
+    + String visitFc_params ( Fc_paramsContext )
+    + String visitIreturn ( IreturnContext )
+    + String visitDeclaracion ( DeclaracionContext )
+    + String visitAsignacion ( AsignacionContext )
+    + String visitOp ( OpContext )
+    + String visitOal ( OalContext )
+    + String visitLo ( LoContext )
+    + String visitLor ( LorContext )
+    + String visitLa ( LaContext )
+    + String visitLand ( LandContext )
+    + String visitO ( OContext )
+    + String visitOr ( OrContext )
+    + String visitAn ( AnContext )
+    + String visitAnd ( AndContext )
+    + String visitE ( EContext )
+    + String visitEquality ( EqualityContext )
+    + String visitR ( RContext )
+    + String visitRelation ( RelationContext )
+    + String visitArit_exp ( Arit_expContext )
+    + String visitT ( TContext )
+    + String visitTerm ( TermContext )
+    + String visitF ( FContext )
+    + String visitFactor ( FactorContext )
+    - printOp ( String )
+    - visitNoNullChilds ( ParserRuleContext, ParserRuleContext )
+}
+
+class Generador {
+    - Generador instance
+    - Integer numV
+    - Integer numL
+    - LinkedList<String> vars
+    - LinkedList<String> labels
+    + Generador getInstance (  )
+    + Integer getnumV (  )
+    + Integer getnumL (  )
+    + LinkedList<String> getVars (  )
+    + LinkedList<String> getLabels (  )
+    + String getVar (  )
+    + String getLabel (  )
+    + String getNewVar (  )
+    + String getNewLabel (  )
+    + resetVars (  )
+    + resetLabels (  )
+}
+
+class Optimizador {
+    - HashSet<String> objectives
+    - HashSet<String> branches
+    - HashSet<String> emptyFunctions
+    - LinkedList<LinkedList<String>> blocks
+    - LinkedList<LinkedList<String>> used
+    - List<String> code
+    - String output
+    - Integer pasada
+    + String Optimizar ( String )
+    + List<String> getCode ( String )
+    + HashSet<String> getCode ( List<String> )
+    + LinkedList<LinkedList<String>> getBlocks ( List<String> )
+    + String getOutput ( LinkedList<LinkedList<String>> )
+    - Integer operate ( String, String, String )
+    - Integer boolToInt ( Boolean )
+    - Boolean intToBool ( Integer )
+    - Boolean isTmpOrId ( Character )
+    - String getOperator ( String )
+    - Boolean operacionNeutra ( String, String, String )
+    - String operoConVars ( String, String, String )
+    - addVarWithValue ( String, Integer, HashMap<String, Integer>, HashMap<String, String> )
+    - String printAsignRestantes ( HashMap<String, String> )
+    - String printUsedVars ( String, HashMap<String, String> )
+    - String getVarValue ( String, HashMap<String, String>, LinkedList<LinkedList<String>> )
+}
+
+TablaSimbolos -> Id
+TablaSimbolos --> FileRW
+
+Escucha --> TablaSimbolos
+Escucha -> Id
+Escucha -> Funcion
+Escucha -> Variable
+declaracionesBaseListener <|-- Escucha
+
+Id -> TipoDato
+Id <|-- Variable
+Id <|-- Funcion
+
+Visitor --> FileRW
+Visitor --> Generador
+
+Optimizador --> FileRW
+
+App --> Escucha
+App --> Visitor
+App --> Optimizador
+
+@enduml

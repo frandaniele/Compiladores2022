@@ -1,0 +1,56 @@
+@startuml Optimizador
+
+class Optimizador {
+    - HashSet<String> objectives
+    - HashSet<String> branches
+    - HashSet<String> emptyFunctions
+    - LinkedList<LinkedList<String>> blocks
+    - LinkedList<LinkedList<String>> used
+    - List<String> code
+    - String output
+    - Integer pasada
+    + String Optimizar ( String )
+    + List<String> getCode ( String )
+    + HashSet<String> getCode ( List<String> )
+    + LinkedList<LinkedList<String>> getBlocks ( List<String> )
+    + String getOutput ( LinkedList<LinkedList<String>> )
+    - Integer operate ( String, String, String )
+    - Integer boolToInt ( Boolean )
+    - Boolean intToBool ( Integer )
+    - Boolean isTmpOrId ( Character )
+    - String getOperator ( String )
+    - Boolean operacionNeutra ( String, String, String )
+    - String operoConVars ( String, String, String )
+    - addVarWithValue ( String, Integer, HashMap<String, Integer>, HashMap<String, String> )
+    - String printAsignRestantes ( HashMap<String, String> )
+    - String printUsedVars ( String, HashMap<String, String> )
+    - String getVarValue ( String, HashMap<String, String>, LinkedList<LinkedList<String>> )
+}
+
+class FileRW {
+    + writeFile ( String, String )
+}
+
+interface Set
+
+interface Map
+
+interface Files
+
+interface Paths
+
+interface List
+
+FileRW -> List
+
+Optimizador -> FileRW
+Optimizador --> List
+
+Map <-- Optimizador
+Set <-- Optimizador
+Files <-- Optimizador
+Paths <-- Optimizador
+
+List -> List
+
+@enduml
