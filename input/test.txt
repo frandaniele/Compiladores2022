@@ -1,0 +1,170 @@
+--------------------------------
+
+FUNCIONAMIENTO
+
+********************************
+
+int main() {
+    int x, y = 3, z = 4*3/9-(9+127|58)*23 == 0;
+    char c = 'c', c2;
+
+    x = c;
+    c2 = x;
+    x++;
+
+    return z && y;
+    //return z || y;
+}
+
+main();
+
+********************************
+
+char printf(char c) {
+    char imprimo = c;
+    return imprimo;
+}
+
+int main(int arg) {
+    
+    if(arg > 3) {
+        printf('a');
+    }
+    else if(arg < 2)
+        return arg;
+    else{
+
+        }
+    
+    int y;
+    while(arg >= 0) {
+        for(int i = 0; i < 10; i++){
+            int x = 3;
+            y = x*i;
+        }
+
+        arg--;
+    }
+
+    printf(y);
+
+    return 0;
+}
+
+main(1);
+
+********************************
+
+int calcular(int x, int y);
+
+void a();
+
+int calcular2(int x) {
+    return calcular(x,2)*3;
+}
+
+int main() {
+    int z,j = 33, i =++j + 00004 , x=calcular(j=00000000+ ++i, 3+j++)*i++ + 5*(904045/3-1) == 4 | 9*(3+2)+calcular(j=i*3,i=3*j);
+
+    i = j/j++;
+    
+    a();
+    
+    i = calcular2(j=i++);
+
+    x = --j + ++i;
+    i = 2;
+    j = 3;
+    if(i < j)
+        x = ++i * ++j;
+    else if(i>j){
+        for(int i = 3; i < 5; ++i)
+            z = 3;
+    }
+    else 
+        x = 4 & j;
+
+    return x*z;
+}
+
+void a(){
+    int b = 3;
+    b++;
+
+    return;
+}
+
+int calcular(int x, int y) {
+    return x + y;
+}
+
+main();
+
+********************************
+
+--------------------------------
+
+ERRORES
+
+********************************
+
+int calc(int x);
+
+int main() {
+    int x = 3;
+    void b = 3;
+
+    while()
+        x++;
+
+    return 0;
+}
+
+int calc(int x, int b){
+    return x;
+}
+
+main();
+
+********************************
+
+void main() {
+    int x, y = x;
+    int x;
+}
+
+main();
+
+********************************
+void foo(){
+    int x = 3434*();
+}
+
+int main() {
+    int x = foo();
+}
+
+main();
+
+********************************
+--------------------------------
+PARA VER LO DEL IF ELSE CONTEXTOS
+
+int main(){
+    int x = 1, y = 2, z = 3;
+
+    if(x==y)
+        z = x*y;
+    else{
+        
+    }
+
+    x = 3;
+    int g = 4;
+
+    if(x>3)
+        g = x+y - 3;
+    else if(x == 3)
+        g = z + y *3;
+    else
+        g = z*x+y;
