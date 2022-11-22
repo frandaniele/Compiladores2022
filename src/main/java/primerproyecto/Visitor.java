@@ -48,6 +48,7 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     private LinkedList<String> operandos;
     private HashMap<String, String> returns;
     private Integer op = 0;
+    private Generador g = Generador.getInstance();
     
     public Visitor() {
         FileRW file_handler = new FileRW();
@@ -82,7 +83,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitI_if(I_ifContext ctx) {
         visitOal(ctx.oal());
 
-        Generador g = Generador.getInstance();
         output += "\n\tifz " + operandos.pop() + " goto " + g.getNewLabel();
         String aux_lbl = g.getLabel();
 
@@ -103,8 +103,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitSec_elif(Sec_elifContext ctx) {
-        Generador g = Generador.getInstance();
-
         if(ctx.IF() != null) {//es elsif
             visitOal(ctx.oal());
             
@@ -139,7 +137,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
         else if(ctx.declaracion() != null)
             visitDeclaracion(ctx.declaracion());
     
-        Generador g = Generador.getInstance();
         output += "\nlbl " + g.getNewLabel();
 
         if(!(ctx.oal(0).getText().equals(""))) {
@@ -162,7 +159,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitIwhile(IwhileContext ctx) {
-        Generador g = Generador.getInstance();
         output += "\nlbl " + g.getNewLabel();
 
         visitOal(ctx.oal());
@@ -181,7 +177,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFuncion(FuncionContext ctx) {
-        Generador g = Generador.getInstance();
         output += "\n";
         
         if(ctx.prototipo() == null) {//si no es el prototipo
@@ -237,8 +232,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitFun_call(Fun_callContext ctx) {
-        Generador g = Generador.getInstance();
-
         output += "\n\tpush " + g.getNewLabel();
         
         if(!(ctx.fc_params().getText().equals("")))
@@ -436,12 +429,10 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     public String visitT(TContext ctx) {
         visitNoNullChilds(ctx.term(), ctx.t());
 
-        if(ctx.SUMA() != null) {
+        if(ctx.SUMA() != null) 
             printOp("+");
-        }
-        else if(ctx.RESTA() != null) {
+        else if(ctx.RESTA() != null) 
             printOp("-");
-        }
 
         return output;
     }
@@ -454,7 +445,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
     @Override
     public String visitF(FContext ctx) {
-        Generador g = Generador.getInstance();
         String aux = operandos.pop();
 
         if(!(ctx.factor().getText().equals(""))) 
@@ -465,15 +455,12 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
         output += g.getNewVar() + aux;
 
-        if(ctx.MULT() != null) {
+        if(ctx.MULT() != null) 
             output += " * ";
-        }
-        else if(ctx.DIV() != null) {
+        else if(ctx.DIV() != null) 
             output += " / ";
-        }
-        else if(ctx.MOD() != null) {
+        else if(ctx.MOD() != null) 
             output += " % ";
-        }
 
         output += operandos.pop();
         
@@ -517,9 +504,8 @@ public class Visitor extends declaracionesBaseVisitor<String> {
 
             operandos.push(ctx.op().ID().getText());
         }
-        else if(ctx.oal() != null) {
+        else if(ctx.oal() != null) 
             visitOal(ctx.oal());
-        }
         else if(ctx.fun_call() != null) {
             funcall = true;
             visitFun_call(ctx.fun_call());
@@ -529,8 +515,6 @@ public class Visitor extends declaracionesBaseVisitor<String> {
     }
 
     private void printOp(String operator) {
-        Generador g = Generador.getInstance();
-
         if(op == 1)
             output += op_str;
 
