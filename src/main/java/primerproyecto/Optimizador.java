@@ -11,6 +11,7 @@ import java.util.List;
 public class Optimizador {
     private HashSet<String> objectives;
     private HashSet<String> branches;
+    private HashSet<String> loops;
     private HashSet<String> emptyFunctions;
     private LinkedList<LinkedList<String>> blocks;
     private LinkedList<LinkedList<String>> used;
@@ -72,16 +73,27 @@ public class Optimizador {
      * @return set de objetivos
      */
     private HashSet<String> getObjectives(List<String> code) {
-        HashSet<String> ret = new HashSet<String>();
+        HashSet<String> ret = new HashSet<String>();//objetivos
+        HashSet<String> lbls = new HashSet<String>();//para detectar loops
         branches = new HashSet<String>();
+        loops = new HashSet<String>();
         
         for (String line : code) {//los objetivos de un salto son lideres de bloques
-            if(line.startsWith("\tifz ") || line.startsWith("\tjmp l")) {
+            if(line.startsWith("\tret")) 
+                lbls.clear();//para no tomar como loop un salto a una funcion definida arriba
+            else if(line.startsWith("lbl")) 
+                lbls.add(line);//si llego a un jmp a un label que ya estaba quiere decir que es un loop
+            else if(line.startsWith("\tifz ")) {
+                String label = "lbl " + line.substring(line.indexOf('l'));
+                ret.add(label);
+                branches.add(label);
+            }
+            else if(line.startsWith("\tjmp l")) {
                 String label = "lbl " + line.substring(line.indexOf('l'));
                 ret.add(label);
 
-                if(line.startsWith("\tifz"))
-                    branches.add(label);
+                if(lbls.contains(label))//es un loop
+                    loops.add(label);
             }
         }
 
@@ -318,7 +330,7 @@ public class Optimizador {
                     if(!objectives.contains(l) || emptyFunctions.contains(l))//si a este bloque no voy nunca
                         skip_block = true;
 
-                    if(!branches.contains(l.trim()) && branch) {
+                    if((!branches.contains(l.trim()) && branch) || loops.contains(l)) {
                         branch = false;
                         vars = new HashMap<String, Integer>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
                         asignaciones = new HashMap<String, String>();//despues de terminar if elses no puedo usar lo mismo que venia ante por si se modifico
@@ -351,13 +363,14 @@ public class Optimizador {
                 else if(l.contains("ifz")) {
                     output += printAsignRestantes(asignaciones);
                     
-                    if(!branch) {
+                    String branch_label = l.substring(l.indexOf("goto") + 5).trim();
+                    
+                    if(!branch && !loops.contains("goto " + branch_label)) {
                         branch = true;
                         vars_global = new HashMap<String, Integer>(vars);
                         asignaciones_global = new HashMap<String, String>(asignaciones);
                     }
                     
-                    String branch_label = l.substring(l.indexOf("goto") + 5).trim();
                     String var = l.substring(4, l.indexOf("goto")).trim();
                     if(vars.containsKey(var)) {//si existe el valor reemplazo la variable
                         Integer val = vars.get(var);

@@ -166,5 +166,12 @@ int main(){
         g = x+y - 3;
     else if(x == 3)
         g = z + y *3;
-    else
-        g = z*x+y;
+    else{
+        for(int i = 0; i<4; i++)
+            x = y*z;
+    }
+
+    return g;
+}
+
+main();
